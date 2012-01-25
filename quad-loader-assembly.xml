@@ -1,0 +1,23 @@
+<assembly>
+	<baseDirectory>quad-loader-${project.version}</baseDirectory>
+	<includeBaseDirectory>false</includeBaseDirectory>
+	<formats>
+		<format>tar.gz</format>
+	</formats>
+	<dependencySets>
+		<dependencySet>
+			<unpack>false</unpack>
+			<outputDirectory>/lib</outputDirectory>
+			<fileMode>0644</fileMode>
+		</dependencySet>
+	</dependencySets>
+	<fileSets>
+		<fileSet>
+			<directory>${project.basedir}/src/main/resources</directory>
+			<outputDirectory>/lib</outputDirectory>
+			<includes>
+				<include>log4j.xml</include>
+			</includes>
+		</fileSet>
+	</fileSets>
+</assembly>
