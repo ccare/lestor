@@ -1,0 +1,335 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.talis</groupId>
+    <artifactId>talis-pom</artifactId>
+    <version>2.17</version>
+  </parent>
+
+  <groupId>com.talis</groupId>
+  <artifactId>lestor</artifactId>
+  <packaging>jar</packaging>
+  <version>0.1-SNAPSHOT</version>
+  <name>Lestore</name>
+  <url>https://github.com/talis/lestor</url>
+  <inceptionYear>2012</inceptionYear>
+  <description>Library for caching and aggregating groups of RDF statements with common subjects - a Local Entity STORe</description>
+  
+  <organization>
+    <name>Talis</name>
+    <url>http://www.talis.com/</url>
+  </organization>
+
+  <scm>
+    <developerConnection>scm:git:ssh://git@github.com/talis/lestor.git</developerConnection>
+    <connection>scm:git:git://github.com/talis/lestor.git</connection>
+    <url>http://github.com/talis/lestor</url>
+  </scm>
+  
+  <properties>
+    <berkeleydb.version>4.1.10</berkeleydb.version>  
+    <compress-lzf.version>0.9.2</compress-lzf.version>
+    <snappy.version>1.0.4.1</snappy.version>
+    <tdb.version>0.9.0-incubating-TALIS-RC4</tdb.version>
+    <joon.version>0.2.66</joon.version>
+  </properties>
+  
+  <dependencies>
+
+    <dependency>
+       <groupId>com.google.inject</groupId>
+       <artifactId>guice</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+    </dependency>
+    
+  	<dependency>
+	  	<groupId>org.slf4j</groupId>
+		  <artifactId>slf4j-api</artifactId>
+  	</dependency>
+            
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.sleepycat</groupId>
+      <artifactId>je</artifactId>
+      <version>${berkeleydb.version}</version>
+    </dependency>
+  
+   <dependency>
+      <groupId>com.ning</groupId>
+      <artifactId>compress-lzf</artifactId>
+      <version>${compress-lzf.version}</version>
+    </dependency>
+  
+    <dependency>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
+      <version>${snappy.version}</version>
+      <type>jar</type>
+    </dependency>
+  
+    <dependency>
+      <groupId>com.talis.platform</groupId>
+      <artifactId>joon</artifactId>
+      <version>${joon.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.apache.jena</groupId>
+      <artifactId>jena-tdb</artifactId>
+      <version>${tdb.version}</version>
+    </dependency>
+    
+    <!-- test dependencies -->
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.2</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <version>3.0</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <scope>test</scope>
+    </dependency>
+    
+  
+</dependencies>
+ 
+<build>
+
+  <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+
+      <!--plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+      </plugin-->
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>failsafe-maven-plugin</artifactId>
+        <executions>
+	<execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+            </goals>
+	    <configuration>
+		<forkMode>always</forkMode>
+	    </configuration>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+          <execution>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+      </plugin>
+
+      <!-- This way we expose filter.properties to the assembly.xml -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <version>1.0-alpha-2</version>
+        <executions>
+          <execution>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>read-project-properties</goal>
+            </goals>
+            <configuration>
+              <files>
+                <file>${project.basedir}/target/filter.properties</file>
+              </files>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <configuration>
+          <linkXref>true</linkXref>
+          <sourceEncoding>${project.build.sourceEncoding}</sourceEncoding>
+          <targetJdk>${jdk.version}</targetJdk>
+          <rulesets>
+            <ruleset>./pmd-ruleset.xml</ruleset>
+          </rulesets>
+        </configuration>
+        <executions>
+          <execution>
+            <id>pmd-checks</id>
+            <phase>prepare-package</phase> <!-- default is verify -->
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>no-cpd-checks</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>cpd-check</goal>
+            </goals>
+            <configuration>
+              <skip>true</skip>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-eclipse-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <remoteTagging>true</remoteTagging>
+          <preparationGoals>clean install</preparationGoals>
+          <autoVersionSubmodules>true</autoVersionSubmodules>
+          <releaseProfiles>perform-release</releaseProfiles>
+        </configuration>
+      </plugin>
+
+    </plugins>
+  </build>
+
+  <pluginRepositories>
+  	<pluginRepository>
+      <id>talis-internal-repo</id>
+      <url>http://nexus.talisplatform.com/content/groups/internal/</url>
+     </pluginRepository>
+  	<pluginRepository>
+      <id>talis-public-repo</id>
+      <url>http://oss.talisplatform.com/content/groups/public/</url>
+     </pluginRepository>
+  </pluginRepositories>
+
+  <repositories>
+    <repository>
+      <id>talis-internal-repo</id>
+      <url>http://nexus.talisplatform.com/content/groups/internal/</url>
+    </repository>
+    <repository>
+      <id>talis-public-repo</id>
+      <url>http://oss.talisplatform.com/content/groups/public/</url>
+    </repository>
+    <repository>
+	    <id>download.oracle.com</id>
+	    <url>http://download.oracle.com/maven</url>
+	  </repository>
+	  
+  </repositories>
+
+  <reporting>
+    <outputDirectory>${project.build.directory}/site</outputDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <configuration>
+          <outputDirectory>${project.basedir}/target/surefire-reports-html</outputDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <configuration>
+          <instrumentation>
+            <ignores>
+              <ignore>org.apache.commons.logging.*</ignore>
+              <ignore>org.slf4j.*</ignore>
+            </ignores>
+            <excludes>
+              <exclude>com/talis/**/*Module.class</exclude>
+            </excludes>
+          </instrumentation>
+        </configuration>
+      </plugin>
+       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <configuration>
+          <instrumentation>
+            <ignores>
+              <ignore>org.slf4j.*</ignore>
+            </ignores>
+            <excludes/>
+          </instrumentation>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jxr-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-pmd-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <linkXref>true</linkXref>
+          <sourceEncoding>utf-8</sourceEncoding>
+          <minimumTokens>100</minimumTokens>
+          <targetJdk>${jdk.version}</targetJdk>
+          <rulesets>
+            <ruleset>./pmd-ruleset.xml</ruleset>
+          </rulesets>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+  
+</project>
