@@ -232,7 +232,6 @@
           <remoteTagging>true</remoteTagging>
           <preparationGoals>clean install</preparationGoals>
           <autoVersionSubmodules>true</autoVersionSubmodules>
-          <releaseProfiles>perform-release</releaseProfiles>
         </configuration>
       </plugin>
 
