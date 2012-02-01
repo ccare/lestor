@@ -63,7 +63,7 @@ public class TdbEntityDatabase implements EntityDatabase {
 	private void deleteQuads(Node subject, Node graph, DatasetGraph dsg){
 		Graph theGraph = dsg.getGraph(graph);
 		LOG.debug("Finding triples to delete for {} {}", subject.getURI(), graph.getURI());
-		ExtendedIterator<Triple> triples = theGraph.find(subject, null, null);
+		ExtendedIterator<Triple> triples = theGraph.find(subject, Node.ANY, Node.ANY);
 		Collection<Triple> toDelete = new LinkedList<Triple>();
 		while (triples.hasNext()){
 			toDelete.add(triples.next());
