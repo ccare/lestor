@@ -9,7 +9,7 @@
   <groupId>com.talis</groupId>
   <artifactId>lestor</artifactId>
   <packaging>jar</packaging>
-  <version>0.4</version>
+  <version>0.5-SNAPSHOT</version>
   <name>Lestore</name>
   <url>https://github.com/talis/lestor</url>
   <inceptionYear>2012</inceptionYear>
