@@ -34,17 +34,7 @@ public abstract class EntityDatabaseTestBase {
 	public abstract EntityDatabase getDatabase();
 	
 	@Test
-	public void roundTripStatementsInTransaction() throws Exception{
-		db.begin();
-		db.put(subject, graph, quads);
-		db.commit();
-		Collection<Quad> other = db.get(subject);
-		assertEquals(quads.size(), other.size());
-		assertTrue(other.containsAll(quads));
-	}
-	
-	@Test
-	public void roundTripStatementsWithoutTransaction() throws Exception{
+	public void roundTripStatements() throws Exception{
 		db.put(subject, graph, quads);
 		Collection<Quad> other = db.get(subject);
 		assertEquals(quads.size(), other.size());
@@ -52,30 +42,7 @@ public abstract class EntityDatabaseTestBase {
 	}
 	
 	@Test
-	public void combineMultipleDescriptionsFromDatabaseInTransaction() throws Exception{
-		int graphs = 10;
-		int stmtsPerGraph = 10; 
-		Collection<Quad> quads = new ArrayList<Quad>();
-		db.begin();
-		for (int i=0; i<graphs; i++){
-			Node graph = Node.createURI("http://example.com/g" + i);
-			Collection<Quad> cbd = getQuads(graph, subject, stmtsPerGraph);
-			quads.addAll(cbd);
-			db.put(subject, graph, cbd);
-		}
-		Node excludeMe = Node.createURI("http://example.com/excludeme");
-		Collection<Quad> toBeExcluded = getQuads(graph, excludeMe, stmtsPerGraph);
-		db.put(excludeMe, graph, toBeExcluded);
-		db.commit();
-		
-		Collection<Quad> aggregate = db.get(subject);
-		assertEquals(quads.size(), aggregate.size());
-		assertTrue(aggregate.containsAll(quads));
-		assertFalse(aggregate.containsAll(toBeExcluded));
-	}
-	
-	@Test
-	public void combineMultipleDescriptionsFromDatabaseWithoutTransaction() throws Exception{
+	public void combineMultipleDescriptionsFromDatabase() throws Exception{
 		int graphs = 10;
 		int stmtsPerGraph = 10; 
 		Collection<Quad> quads = new ArrayList<Quad>();
@@ -96,32 +63,7 @@ public abstract class EntityDatabaseTestBase {
 	}
 
 	@Test
-	public void deleteStatementsForSubjectFromSingleGraphInTransaction() throws Exception {
-		Collection<Quad> q1 = new ArrayList<Quad>();
-		q1.add(new Quad(graph, 
-						subject, 
-						Node.createURI("http://example.com/first"), 
-						Node.createLiteral("first")));
-		
-		Node otherGraph = Node.createURI("http://example.com/graphs/other"); 
-		Collection<Quad> q2 = new ArrayList<Quad>();
-		q2.add(new Quad(otherGraph, 
-						subject, 
-						Node.createURI("http://example.com/second"), 
-						Node.createLiteral("second")));
-		db.begin();
-		db.put(subject, graph, q1);
-		db.put(subject, otherGraph, q2);
-		db.commit();
-		
-		assertEquals(2, db.get(subject).size());
-		db.delete(subject, graph);
-		assertEquals(1, db.get(subject).size());
-		assertTrue(db.get(subject).containsAll(q2));
-	}
-	
-	@Test
-	public void deleteStatementsForSubjectFromSingleGraphWithoutTransaction() throws Exception {
+	public void deleteStatementsForSubjectFromSingleGraph() throws Exception {
 		Collection<Quad> q1 = new ArrayList<Quad>();
 		q1.add(new Quad(graph, 
 						subject, 

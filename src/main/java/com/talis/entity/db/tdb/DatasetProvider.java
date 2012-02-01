@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.tdb.TDB;
-import com.hp.hpl.jena.tdb.TDBFactoryTxn;
+import com.hp.hpl.jena.tdb.TDBFactory;
 import com.hp.hpl.jena.tdb.base.file.Location;
 import com.hp.hpl.jena.tdb.sys.SystemTDB;
 import com.talis.entity.EntityDatabaseException;
@@ -37,7 +37,7 @@ public class DatasetProvider {
 		try{
 			LOG.debug("Creating TDB Dataset with id {}", id);
 			Location location = locationProvider.getLocation(id);
-			Dataset dataset = TDBFactoryTxn.XcreateDataset(location);
+			Dataset dataset = TDBFactory.createDataset(location);
 			LOG.debug("TDB Dataset initialised at {}", location.getDirectoryPath());
 			return dataset;
 		}catch(Exception e){

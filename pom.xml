@@ -27,7 +27,7 @@
   </scm>
   
   <properties>
-    <tdb.version>0.9.0-incubating-TALIS-RC4</tdb.version>
+    <tdb.version>0.9.0-incubating-TALIS-RC5</tdb.version>
     <joon.version>0.2.66</joon.version>
   </properties>
   

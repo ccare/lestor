@@ -49,13 +49,13 @@ public class BenchmarkDatabases {
 	
 	private void benchmarkStore(EntityDatabase db) throws Exception{
 		int iter = 100;
-		db.begin();
+//		db.begin();
 		long start = System.currentTimeMillis();
 		for (int i=0; i<iter; i++){
 			db.put(subject, graph, quads);
 			db.get(subject);	
 		}
-		db.commit();
+//		db.commit();
 		long end = System.currentTimeMillis();
 		long duration = end - start;
 		System.out.println(String.format("Iterations: %s, Total: %s, PerOp: %s",iter, duration, (double)((double)duration/(double)iter)));
