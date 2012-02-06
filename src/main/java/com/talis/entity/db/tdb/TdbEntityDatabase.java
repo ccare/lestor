@@ -54,18 +54,11 @@ public class TdbEntityDatabase implements EntityDatabase {
 	public Collection<Quad> get(Node subject) throws EntityDatabaseException {
 		checkOpen();
 		Collection<Quad> quads = new LinkedList<Quad>();
-		dataset.begin(ReadWrite.READ);
-		try{
-			LOG.debug("Finding quads");
-			Iterator<Quad> iter = dataset.asDatasetGraph().find(Node.ANY, subject, Node.ANY, Node.ANY);
-			LOG.info("Collecting quads");
-			while(iter.hasNext()){
-				quads.add(iter.next());
-			}
-		}catch(Exception e){
-			dataset.abort();
-		}finally{
-			dataset.end();
+		LOG.debug("Finding quads");
+		Iterator<Quad> iter = dataset.asDatasetGraph().find(Node.ANY, subject, Node.ANY, Node.ANY);
+		LOG.info("Collecting quads");
+		while(iter.hasNext()){
+			quads.add(iter.next());
 		}
 		LOG.debug("Done");
 		return quads;
