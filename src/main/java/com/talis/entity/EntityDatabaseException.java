@@ -6,4 +6,8 @@ public class EntityDatabaseException extends Exception {
 		super(message, cause);
 	}
 
+	public EntityDatabaseException(String message) {
+		super(message);
+	}
+
 }

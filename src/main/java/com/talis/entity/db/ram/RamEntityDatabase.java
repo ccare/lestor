@@ -47,4 +47,23 @@ public class RamEntityDatabase implements EntityDatabase {
 		store.clear();
 	}
 
+	@Override
+	public void commit() {
+		// noop
+	}
+
+	@Override
+	public void begin(){
+		//noop
+	}
+
+	@Override
+	public void abort(){
+		throw new UnsupportedOperationException("Not supported");
+	}
+
+	@Override 
+	public void close(){
+		// noop
+	}
 }

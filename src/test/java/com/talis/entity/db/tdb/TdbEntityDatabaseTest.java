@@ -6,6 +6,8 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
 import java.io.IOException;
@@ -16,13 +18,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.ReadWrite;
-import com.hp.hpl.jena.sparql.core.DatasetGraph;
+import com.hp.hpl.jena.tdb.StoreConnection;
 import com.hp.hpl.jena.tdb.TDBFactory;
 import com.hp.hpl.jena.tdb.base.file.Location;
-import com.hp.hpl.jena.tdb.sys.TDBMaker;
 import com.talis.entity.EntityDatabase;
 import com.talis.entity.EntityDatabaseException;
 import com.talis.entity.db.EntityDatabaseTestBase;
@@ -89,54 +89,25 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 			verify(datasetProvider);
 		}
 	}
-	
+
 	@Test
-	public void getExecutesInsideReadTransaction() throws Exception {
-		DatasetGraph dsg = TDBFactory.createDatasetGraph(Location.mem());
-				
+	public void beginStartsReadWriteTransaction() throws Exception {
 		Dataset dataset = createStrictMock(Dataset.class);
-		dataset.begin(ReadWrite.READ);
-		expect(dataset.asDatasetGraph()).andReturn(dsg);
-		dataset.end();
+		dataset.begin(ReadWrite.WRITE);
 		replay(dataset);
 		
 		datasetProvider = createNiceMock(DatasetProvider.class);
 		expect(datasetProvider.getDataset(id)).andReturn(dataset);
 		replay(datasetProvider);
 		
-		new TdbEntityDatabase(id, datasetProvider).get(subject);
+		new TdbEntityDatabase(id, datasetProvider).begin();
 		verify(dataset);
 	}
 	
 	@Test
-	public void getAbortsTransactionWhenError() throws Exception {
-		DatasetGraph dsg = createStrictMock(DatasetGraph.class);
-		dsg.find(Node.ANY, subject, Node.ANY, Node.ANY);
-		expectLastCall().andThrow(new RuntimeException("BANG!"));
-		replay(dsg);		
-		
+	public void commitCommitsAndEndsTransaction() throws Exception {
 		Dataset dataset = createStrictMock(Dataset.class);
-		dataset.begin(ReadWrite.READ);
-		expect(dataset.asDatasetGraph()).andReturn(dsg);
-		dataset.abort();
-		dataset.end();
-		replay(dataset);
-		
-		datasetProvider = createNiceMock(DatasetProvider.class);
-		expect(datasetProvider.getDataset(id)).andReturn(dataset);
-		replay(datasetProvider);
-		
-		new TdbEntityDatabase(id, datasetProvider).get(subject);
-		verify(dataset, dsg);
-	}
-	
-	@Test
-	public void putExecutesInsideWriteTransaction() throws Exception {
-		DatasetGraph dsg = TDBFactory.createDatasetGraph(Location.mem());
-				
-		Dataset dataset = createStrictMock(Dataset.class);
-		dataset.begin(ReadWrite.WRITE);
-		expect(dataset.asDatasetGraph()).andReturn(dsg);
+		expect(dataset.isInTransaction()).andReturn(true);
 		dataset.commit();
 		dataset.end();
 		replay(dataset);
@@ -145,20 +116,14 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 		expect(datasetProvider.getDataset(id)).andReturn(dataset);
 		replay(datasetProvider);
 		
-		new TdbEntityDatabase(id, datasetProvider).put(subject, graph, quads);
+		new TdbEntityDatabase(id, datasetProvider).commit();
 		verify(dataset);
 	}
 	
 	@Test
-	public void putAbortsTransactionWhenError() throws Exception {
-		DatasetGraph dsg = createStrictMock(DatasetGraph.class);
-		dsg.getGraph(graph);
-		expectLastCall().andThrow(new RuntimeException("BANG!"));
-		replay(dsg);		
-		
+	public void abortAbortsAndEndsTransaction() throws Exception {
 		Dataset dataset = createStrictMock(Dataset.class);
-		dataset.begin(ReadWrite.WRITE);
-		expect(dataset.asDatasetGraph()).andReturn(dsg);
+		expect(dataset.isInTransaction()).andReturn(true);
 		dataset.abort();
 		dataset.end();
 		replay(dataset);
@@ -167,58 +132,49 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 		expect(datasetProvider.getDataset(id)).andReturn(dataset);
 		replay(datasetProvider);
 		
-		new TdbEntityDatabase(id, datasetProvider).put(subject, graph, quads);
-		verify(dataset);
-	}
-	
-	@Test
-	public void deleteExecutesInsideWriteTransaction() throws Exception {
-		DatasetGraph dsg = TDBFactory.createDatasetGraph(Location.mem());
-				
-		Dataset dataset = createStrictMock(Dataset.class);
-		dataset.begin(ReadWrite.WRITE);
-		expect(dataset.asDatasetGraph()).andReturn(dsg);
-		dataset.commit();
-		dataset.end();
-		replay(dataset);
-		
-		datasetProvider = createNiceMock(DatasetProvider.class);
-		expect(datasetProvider.getDataset(id)).andReturn(dataset);
-		replay(datasetProvider);
-		
-		new TdbEntityDatabase(id, datasetProvider).delete(subject, graph);
-		verify(dataset);
-	}
-	
-	@Test
-	public void deleteAbortsTransactionWhenError() throws Exception {
-		DatasetGraph dsg = createStrictMock(DatasetGraph.class);
-		dsg.getGraph(graph);
-		expectLastCall().andThrow(new RuntimeException("BANG!"));
-		replay(dsg);		
-		
-		Dataset dataset = createStrictMock(Dataset.class);
-		dataset.begin(ReadWrite.WRITE);
-		expect(dataset.asDatasetGraph()).andReturn(dsg);
-		dataset.abort();
-		dataset.end();
-		replay(dataset);
-		
-		datasetProvider = createNiceMock(DatasetProvider.class);
-		expect(datasetProvider.getDataset(id)).andReturn(dataset);
-		replay(datasetProvider);
-		
-		new TdbEntityDatabase(id, datasetProvider).delete(subject, graph);
+		new TdbEntityDatabase(id, datasetProvider).abort();
 		verify(dataset);
 	}
 	
 	@Test
 	public void safeToCallCommitWhenNotInTransaction() throws EntityDatabaseException{
-		new TdbEntityDatabase(id, datasetProvider);
+		new TdbEntityDatabase(id, datasetProvider).commit();
 	}
 	
 	@Test
 	public void safeToCallAbortWhenNotInTransaction() throws EntityDatabaseException{
-		new TdbEntityDatabase(id, datasetProvider);
+		new TdbEntityDatabase(id, datasetProvider).abort();
+	}
+	
+	@Test (expected=EntityDatabaseException.class)
+	public void databaseCannotBeUsedAfterClose() throws Exception{
+		TdbEntityDatabase db = new TdbEntityDatabase(id, datasetProvider);
+		db.put(subject, graph, quads);
+		db.close();
+		db.get(subject);
+	}
+	
+	@Test
+	public void closeReleasesDataset() throws Exception{
+		// This is a bit indirect, as we're trying to check 
+		// some effects that happen down in the TDB layer
+		
+		// first, get a reference to the Location of our
+		// Dataset
+		Dataset dataset = datasetProvider.getDataset(id);
+		Location location = TDBFactory.location(dataset);
+		
+		TdbEntityDatabase db = new TdbEntityDatabase(id, datasetProvider);
+		db.put(subject, graph, quads);
+		
+		// Assert that a StoreConnection has been cached 
+		// for our Location
+		assertNotNull(StoreConnection.getExisting(location));
+		db.close();
+		
+		// After closing the EntityDatabase, TDB's caches should
+		// have been cleared, so StoreConnection should no
+		// longer be cached
+		assertNull(StoreConnection.getExisting(location));
 	}
 }

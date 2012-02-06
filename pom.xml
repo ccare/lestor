@@ -10,7 +10,7 @@
   <artifactId>lestor</artifactId>
   <packaging>jar</packaging>
   <version>0.6-SNAPSHOT</version>
-  <name>Lestore</name>
+  <name>Lestor</name>
   <url>https://github.com/talis/lestor</url>
   <inceptionYear>2012</inceptionYear>
   <description>Library for caching and aggregating groups of RDF statements with common subjects - a Local Entity STORe</description>
@@ -43,10 +43,10 @@
       <artifactId>slf4j-log4j12</artifactId>
     </dependency>
     
-  	<dependency>
-	  	<groupId>org.slf4j</groupId>
-		  <artifactId>slf4j-api</artifactId>
-  	</dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
             
     <dependency>
       <groupId>commons-io</groupId>

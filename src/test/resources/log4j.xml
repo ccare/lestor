@@ -27,7 +27,7 @@
     
     <root> 
     	<level value="info"/>
-        <appender-ref ref="NULL" /> 
+        <appender-ref ref="fileout" /> 
     </root> 
 
 </log4j:configuration>
