@@ -91,8 +91,9 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 	}
 
 	@Test
-	public void beginStartsReadWriteTransaction() throws Exception {
+	public void beginChecksWhetherInTransactionAndThenStartsReadWriteTransaction() throws Exception {
 		Dataset dataset = createStrictMock(Dataset.class);
+		expect(dataset.isInTransaction()).andReturn(false);
 		dataset.begin(ReadWrite.WRITE);
 		replay(dataset);
 		
@@ -102,6 +103,23 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 		
 		new TdbEntityDatabase(id, datasetProvider).begin();
 		verify(dataset);
+	}
+
+	@Test(expected = EntityDatabaseException.class)
+	public void beginThrowsExceptionIfAlreadyInTransaction() throws Exception {
+		Dataset dataset = createStrictMock(Dataset.class);
+		expect(dataset.isInTransaction()).andReturn(true);
+		replay(dataset);
+		
+		datasetProvider = createNiceMock(DatasetProvider.class);
+		expect(datasetProvider.getDataset(id)).andReturn(dataset);
+		replay(datasetProvider);
+		
+		try {
+			new TdbEntityDatabase(id, datasetProvider).begin();
+		} finally {
+			verify(dataset);
+		}
 	}
 	
 	@Test
@@ -144,6 +162,13 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 	@Test
 	public void safeToCallAbortWhenNotInTransaction() throws EntityDatabaseException{
 		new TdbEntityDatabase(id, datasetProvider).abort();
+	}
+	
+	@Test(expected=EntityDatabaseException.class)
+	public void callingBeginTwiceDoesntDeadlockButExceptionThrown() throws EntityDatabaseException {
+		TdbEntityDatabase tdbEntityDatabase = new TdbEntityDatabase(id, datasetProvider);
+		tdbEntityDatabase.begin();
+		tdbEntityDatabase.begin();
 	}
 	
 	@Test (expected=EntityDatabaseException.class)

@@ -76,6 +76,12 @@ public class TdbEntityDatabase implements EntityDatabase {
 	public void begin() throws EntityDatabaseException{
 		checkOpen();
 		LOG.info("Staring TDB transaction");
+		if (dataset.isInTransaction()){
+			String msg = 
+				"Could not begin a transaction as a transaction is already open";
+			LOG.error(msg);
+			throw new EntityDatabaseException(msg);
+		}
 		dataset.begin(ReadWrite.WRITE);
 		LOG.info("Transaction started");
 	}
