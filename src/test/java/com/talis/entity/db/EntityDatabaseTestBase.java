@@ -1,5 +1,23 @@
+/*
+ *    Copyright 2012 Talis Systems Ltd
+ * 
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ * 
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.talis.entity.db;
 
+import static com.talis.entity.TestUtils.assertQuadCollectionsEqual;
+import static com.talis.entity.TestUtils.getQuads;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -8,13 +26,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.talis.entity.EntityDatabase;
 
 public abstract class EntityDatabaseTestBase {
+	
+	@Rule
+	public TemporaryFolder tmpDir = new TemporaryFolder();
 	
 	protected Node subject;
 	protected Node graph;
@@ -175,15 +198,18 @@ public abstract class EntityDatabaseTestBase {
 		assertFalse(db.exists(subject));
 	}
 	
-	public static Collection<Quad> getQuads(Node graph, Node subject, int num){
-		Collection<Quad> quads = new ArrayList<Quad>();
-		for (int i=0; i<num; i++){
-			quads.add(
-					new Quad(	graph,
-								subject,
-								Node.createURI("http://example.com/p"),
-								Node.createURI("http://example.com/o" + i)));
-		}
-		return quads;
+	@Test
+	public void getGraph() throws Exception{
+		db.put(subject, graph, quads);
+		Node otherGraph = Node.createURI("http://other/graph");
+		Collection<Quad> otherQuads = getQuads(otherGraph, subject, 5);
+		db.put(subject, otherGraph, otherQuads);
+		
+		Collection<Quad> allQuads = new ArrayList<Quad>(quads);
+		allQuads.addAll(otherQuads);
+		
+		assertQuadCollectionsEqual(allQuads, db.get(subject));
+		assertQuadCollectionsEqual(quads, db.getGraph(graph));
+		assertQuadCollectionsEqual(otherQuads, db.getGraph(otherGraph));
 	}
 }

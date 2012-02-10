@@ -1,3 +1,19 @@
+/*
+ *    Copyright 2012 Talis Systems Ltd
+ * 
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ * 
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.talis.entity.db.tdb;
 
 import java.util.Collection;
@@ -59,10 +75,19 @@ public class TdbEntityDatabase implements EntityDatabase {
 
 	@Override
 	public Collection<Quad> get(Node subject) throws EntityDatabaseException {
+		return collectQuads(Node.ANY, subject);
+	}
+
+	@Override
+	public Collection<Quad> getGraph(Node graph) throws EntityDatabaseException {
+		return collectQuads(graph, Node.ANY);
+	}
+	
+	private Collection<Quad> collectQuads(Node graph, Node subject) throws EntityDatabaseException{
 		checkOpen();
 		Collection<Quad> quads = new LinkedList<Quad>();
 		LOG.debug("Finding quads");
-		Iterator<Quad> iter = dataset.asDatasetGraph().find(Node.ANY, subject, Node.ANY, Node.ANY);
+		Iterator<Quad> iter = dataset.asDatasetGraph().find(graph, subject, Node.ANY, Node.ANY);
 		LOG.info("Collecting quads");
 		while(iter.hasNext()){
 			quads.add(iter.next());
@@ -70,7 +95,7 @@ public class TdbEntityDatabase implements EntityDatabase {
 		LOG.debug("Done");
 		return quads;
 	}
-
+	
 	@Override
 	public boolean exists(Node subject) throws EntityDatabaseException {
 		checkOpen();
@@ -163,4 +188,5 @@ public class TdbEntityDatabase implements EntityDatabase {
 			throw new EntityDatabaseException("Database cannot be re-used after close");
 		}
 	}
+
 }

@@ -1,9 +1,26 @@
+/*
+ *    Copyright 2012 Talis Systems Ltd
+ * 
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ * 
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 package com.talis.entity.db.ram;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import com.hp.hpl.jena.graph.Node;
@@ -13,32 +30,36 @@ import com.talis.entity.EntityDatabaseException;
 
 public class RamEntityDatabase implements EntityDatabase {
 
-	private final Map<String, Collection<Quad>> store = new TreeMap<String, Collection<Quad>>();
+	private Map<String, Collection<Quad>> store = new TreeMap<String, Collection<Quad>>();
+	private Map<Node, Set<Node>> graphIndex = new HashMap<Node, Set<Node>>();
 	
 	@Override
 	public void put(Node subject, Node graph, Collection<Quad> quads){
-		store.put(getKey(subject, graph), quads);
+		String key = getKey(subject, graph); 
+		store.put(key, quads);
+		Set<Node> subjects = graphIndex.get(graph);
+		if (null == subjects){
+			subjects = new HashSet<Node>();
+			graphIndex.put(graph, subjects);
+		}
+		subjects.add(subject);
 	}
 
 	@Override
 	public void delete(Node subject, Node graph) {
 		store.remove(getKey(subject, graph));
+		graphIndex.remove(getKey(graph, subject));
 	}
 
 	@Override
 	public void deleteGraph(Node graph) {
-		String targetGraph = graph.toString();
-		ArrayList<String> forDeletion = new ArrayList<String>();
-		for (String key : store.keySet()){
-			String[] parts = key.split("\t");
-			String thisGraph = parts[1];
-			if (thisGraph.equals(targetGraph)){
-				forDeletion.add(key);
+		Set<Node> subjects = graphIndex.get(graph);
+		if (null != subjects){
+			for (Node subjectToDelete : subjects) {
+				store.remove(getKey(subjectToDelete, graph));
 			}
 		}
-		for (String keyToDelete : forDeletion) {
-			store.remove(keyToDelete);
-		}
+		graphIndex.remove(graph);
 	}
 
 	@Override
@@ -49,12 +70,23 @@ public class RamEntityDatabase implements EntityDatabase {
 			String[] parts = key.split("\t");
 			String thisSubject = parts[0];
 			if (thisSubject.equals(targetSubject)){
-				allQuads.addAll(store.get(key));
+				allQuads.addAll(store.get(thisSubject + "\t" + parts[1]));
 			}
 		}
 		return allQuads;
 	}
 	
+	@Override
+	public Collection<Quad> getGraph(Node graph) throws EntityDatabaseException {
+		Collection<Quad> allQuads = new HashSet<Quad>();
+		Set<Node> subjects = graphIndex.get(graph);
+		if (null != subjects){
+			for (Node subject : subjects) {
+				allQuads.addAll(store.get(getKey(subject, graph)));
+			}
+		}
+		return allQuads;
+	}
 	@Override
 	public boolean exists(Node subject) throws EntityDatabaseException {
 		String targetSubject = subject.toString();
@@ -75,6 +107,7 @@ public class RamEntityDatabase implements EntityDatabase {
 	@Override
 	public void clear() throws EntityDatabaseException {
 		store.clear();
+		graphIndex.clear();
 	}
 
 	@Override
@@ -94,6 +127,7 @@ public class RamEntityDatabase implements EntityDatabase {
 
 	@Override 
 	public void close(){
-		// noop
+		store = null;
+		graphIndex = null;
 	}
 }
