@@ -110,6 +110,71 @@ public abstract class EntityDatabaseTestBase {
 		assertTrue(db.get(subject).isEmpty());	
 	}
 	
+	@Test
+	public void deleteGraphSingleGraph() throws Exception {
+		int graphs = 1;
+		int stmtsPerGraph = 1; 
+		Collection<Quad> quads = new ArrayList<Quad>();
+		for (int i=0; i<graphs; i++){
+			Node graph = Node.createURI("http://example.com/g" + i);
+			subject = Node.createURI("http://example.com/s" + i);
+			Collection<Quad> cbd = getQuads(graph, subject, stmtsPerGraph);
+			quads.addAll(cbd);
+			db.put(subject, graph, cbd);
+		}
+		
+		subject = Node.createURI("http://example.com/s0");
+		graph = Node.createURI("http://example.com/g0");
+		
+		assertFalse(db.get(subject).isEmpty());
+		db.deleteGraph(graph);
+		assertTrue(db.get(subject).isEmpty());	
+	}
+	
+	@Test
+	public void deleteGraphDoesNotRemoveSubjectsFromOtherGraphs() throws Exception {
+		int graphs = 2;
+		int stmtsPerGraph = 1; 
+		Node subjectInEveryGraph = Node.createURI("http://example.com/s");
+		Collection<Quad> quads = new ArrayList<Quad>();
+		for (int i=0; i<graphs; i++){
+			Node graph = Node.createURI("http://example.com/g" + i);
+			Collection<Quad> cbd = getQuads(graph, subjectInEveryGraph, stmtsPerGraph);
+			quads.addAll(cbd);
+			db.put(subjectInEveryGraph, graph, cbd);
+		}
+		
+		graph = Node.createURI("http://example.com/g0");
+		
+		assertEquals(2, db.get(subject).size());
+		db.deleteGraph(graph);
+		assertEquals(1, db.get(subject).size());
+		assertEquals("http://example.com/g1", ((Quad)db.get(subject).toArray()[0]).getGraph().getURI());
+	}
+	
+	@Test
+	public void checkIfSubjectExists() throws Exception {
+
+		assertFalse(db.exists(subject));
+		
+		int graphs = 2;
+		int stmtsPerGraph = 1; 
+		Collection<Quad> quads = new ArrayList<Quad>();
+		for (int i=0; i<graphs; i++){
+			Node graph = Node.createURI("http://example.com/g" + i);
+			Collection<Quad> cbd = getQuads(graph, subject, stmtsPerGraph);
+			quads.addAll(cbd);
+			db.put(subject, graph, cbd);
+		}
+		
+		for (int i=0; i<graphs; i++){
+			assertTrue(db.exists(subject));
+			Node graph = Node.createURI("http://example.com/g" + i);
+			db.deleteGraph(graph);
+		}
+		assertFalse(db.exists(subject));
+	}
+	
 	public static Collection<Quad> getQuads(Node graph, Node subject, int num){
 		Collection<Quad> quads = new ArrayList<Quad>();
 		for (int i=0; i<num; i++){

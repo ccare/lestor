@@ -51,6 +51,13 @@ public class TdbEntityDatabase implements EntityDatabase {
 	}
 
 	@Override
+	public void deleteGraph(Node graph) throws EntityDatabaseException {
+		checkOpen();
+		LOG.info("Deleting graph {} ", graph.getURI());
+		dataset.asDatasetGraph().removeGraph(graph);
+	}
+
+	@Override
 	public Collection<Quad> get(Node subject) throws EntityDatabaseException {
 		checkOpen();
 		Collection<Quad> quads = new LinkedList<Quad>();
@@ -62,6 +69,15 @@ public class TdbEntityDatabase implements EntityDatabase {
 		}
 		LOG.debug("Done");
 		return quads;
+	}
+
+	@Override
+	public boolean exists(Node subject) throws EntityDatabaseException {
+		checkOpen();
+		LOG.debug("Checking existance of {}", subject.getURI());
+		boolean result = dataset.asDatasetGraph().contains(Node.ANY, subject, Node.ANY, Node.ANY);
+		LOG.debug("Subject {} found: {}", subject.getURI(), result);
+		return result;
 	}
 
 	@Override

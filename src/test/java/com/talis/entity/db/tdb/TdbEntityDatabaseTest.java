@@ -202,4 +202,18 @@ public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 		// longer be cached
 		assertNull(StoreConnection.getExisting(location));
 	}
+	
+	@Test(expected=EntityDatabaseException.class)
+	public void deleteGraphThrowsExceptionIfClosed() throws Exception{
+		TdbEntityDatabase tdbEntityDatabase = new TdbEntityDatabase(id, datasetProvider);
+		tdbEntityDatabase.close();
+		tdbEntityDatabase.deleteGraph(graph);
+	}
+	
+	@Test(expected=EntityDatabaseException.class)
+	public void existsThrowsExceptionIfClosed() throws Exception{
+		TdbEntityDatabase tdbEntityDatabase = new TdbEntityDatabase(id, datasetProvider);
+		tdbEntityDatabase.close();
+		tdbEntityDatabase.exists(subject);
+	}
 }

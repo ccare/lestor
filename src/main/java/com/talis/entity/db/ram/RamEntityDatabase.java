@@ -1,5 +1,6 @@
 package com.talis.entity.db.ram;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,6 +26,22 @@ public class RamEntityDatabase implements EntityDatabase {
 	}
 
 	@Override
+	public void deleteGraph(Node graph) {
+		String targetGraph = graph.toString();
+		ArrayList<String> forDeletion = new ArrayList<String>();
+		for (String key : store.keySet()){
+			String[] parts = key.split("\t");
+			String thisGraph = parts[1];
+			if (thisGraph.equals(targetGraph)){
+				forDeletion.add(key);
+			}
+		}
+		for (String keyToDelete : forDeletion) {
+			store.remove(keyToDelete);
+		}
+	}
+
+	@Override
 	public Collection<Quad> get(Node subject) throws EntityDatabaseException {
 		String targetSubject = subject.toString();
 		Collection<Quad> allQuads = new HashSet<Quad>();
@@ -36,6 +53,19 @@ public class RamEntityDatabase implements EntityDatabase {
 			}
 		}
 		return allQuads;
+	}
+	
+	@Override
+	public boolean exists(Node subject) throws EntityDatabaseException {
+		String targetSubject = subject.toString();
+		for (String key : store.keySet()){
+			String[] parts = key.split("\t");
+			String thisSubject = parts[0];
+			if (thisSubject.equals(targetSubject)){
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	private String getKey(Node subject, Node graph){
