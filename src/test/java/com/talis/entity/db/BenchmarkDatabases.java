@@ -4,10 +4,8 @@ import java.io.File;
 import java.util.Collection;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -16,6 +14,7 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.talis.entity.EntityDatabase;
 import com.talis.entity.db.babudb.BabuDbEntityDatabase;
+import com.talis.entity.db.babudb.DatabaseManager;
 import com.talis.entity.db.krati.KratiEntityDatabase;
 import com.talis.entity.db.leveldb.LevelDbEntityDatabase;
 import com.talis.entity.db.leveldb.LevelDbEntityDatabase2;
@@ -23,8 +22,6 @@ import com.talis.entity.db.ram.RamEntityDatabase;
 import com.talis.entity.db.tdb.DatasetProvider;
 import com.talis.entity.db.tdb.LocationProvider;
 import com.talis.entity.db.tdb.TdbEntityDatabase;
-import com.talis.entity.serializers.GzipSerializer;
-import com.talis.entity.serializers.LZFSerializer;
 import com.talis.entity.serializers.POSerializer;
 import com.talis.entity.serializers.Serializer;
 import com.talis.entity.serializers.SnappySerializer;
@@ -96,24 +93,28 @@ public class BenchmarkDatabases {
 //		Serializer s = new LZFSerializer(new POSerializer());
 //		Serializer s = new GzipSerializer(new POSerializer());
 		
-		EntityDatabase db = new BabuDbEntityDatabase(s, id, new VersionedDirectoryProvider(tmpDir.getRoot()));
-		benchmarkStore(db);
-		
-		
-		
-		File f = new File(System.getProperty("java.io.tmpdir"), "keep");
-		FileUtils.forceMkdir(f);
-		FileUtils.cleanDirectory(f);
-		FileUtils.copyDirectory(tmpDir.getRoot(), f);
-		EntityDatabase db2 = new BabuDbEntityDatabase(s, id, new VersionedDirectoryProvider(tmpDir.getRoot()));
-		EntityDatabaseTestBase.printQuads(db2.get(subject));
+		System.setProperty(DatabaseManager.DB_LOCATION_PROPERTY, tmpDir.getRoot().getAbsolutePath());
+		try{
+			DatabaseManager dbManager = new DatabaseManager();
+			EntityDatabase db = new BabuDbEntityDatabase(new SnappySerializer(new POSerializer()), id, dbManager);
+			benchmarkStore(db);
+			
+			File f = new File(System.getProperty("java.io.tmpdir"), "keep");
+			FileUtils.forceMkdir(f);
+			FileUtils.cleanDirectory(f);
+			FileUtils.copyDirectory(tmpDir.getRoot(), f);
+			EntityDatabase db2 = new BabuDbEntityDatabase(new SnappySerializer(new POSerializer()), id, dbManager);
+			EntityDatabaseTestBase.printQuads(db2.get(subject));
+		}finally{
+			System.clearProperty(DatabaseManager.DB_LOCATION_PROPERTY);
+		}
 	}
 	
 	private void benchmarkStore(EntityDatabase db) throws Exception{
 		System.out.println("======================================");
 		System.out.println(db.getClass().getName());
 		System.out.println(tmpDir.getRoot());
-		int iter = 100000;
+		int iter = 10000;
 		db.begin();
 		long start = System.currentTimeMillis();
 		long last = start;
