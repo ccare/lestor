@@ -40,7 +40,6 @@ public abstract class EntityDatabaseTestBase {
 		long start = System.currentTimeMillis();
 		db.put(subject, graph, quads);
 		Collection<Quad> other = db.get(subject);
-		System.out.println(System.currentTimeMillis() - start);
 		assertEquals(quads.size(), other.size());
 		assertTrue(other.containsAll(quads));
 	}
