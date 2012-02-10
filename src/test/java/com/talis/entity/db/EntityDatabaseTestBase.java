@@ -4,11 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.openjena.riot.out.OutputLangUtils;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
@@ -35,8 +37,10 @@ public abstract class EntityDatabaseTestBase {
 	
 	@Test
 	public void roundTripStatements() throws Exception{
+		long start = System.currentTimeMillis();
 		db.put(subject, graph, quads);
 		Collection<Quad> other = db.get(subject);
+		System.out.println(System.currentTimeMillis() - start);
 		assertEquals(quads.size(), other.size());
 		assertTrue(other.containsAll(quads));
 	}
@@ -120,5 +124,18 @@ public abstract class EntityDatabaseTestBase {
 								Node.createURI("http://example.com/o" + i)));
 		}
 		return quads;
+	}
+	
+	public static void printQuads(Collection<Quad> quads){
+		PrintWriter out = new PrintWriter(System.out);
+		for (Quad quad : quads){
+			OutputLangUtils.output(out, quad, null, null);
+		}
+		out.flush();
+	}
+	
+	public static void assertQuadCollectionsEqual(Collection<Quad> first, Collection<Quad> second){
+		assertEquals(first.size(), second.size());
+		assertTrue(first.containsAll(second));
 	}
 }
