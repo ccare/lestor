@@ -79,6 +79,21 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 	}
 
 	@Override
+	public boolean exists(Node subject) throws EntityDatabaseException {
+		LOG.debug("Checking for existence of {}", subject.getURI());
+		byte[] key = getKeyPrefix(subject);
+		try {
+			Iterator<Entry<byte[], byte[]>> iterator = 
+						db.prefixLookup(SUBJECT_INDEX, key, null).get();
+			LOG.debug("Finished subject lookup for {}", subject.getURI());
+			return iterator.hasNext();
+		} catch (BabuDBException e) {
+			LOG.error("Error performing subject lookup", e);
+			throw new EntityDatabaseException("Unable to lookup subject", e);
+		}
+	}
+	
+	@Override
 	public Collection<Quad> get(Node subject) throws EntityDatabaseException {
 		LOG.debug("Combining entity descriptions");
 		ArrayList<Quad> quads = new ArrayList<Quad>();
@@ -135,7 +150,8 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 		return quads;
 	}
 	
-	public void clearGraph(Node graph) throws EntityDatabaseException {
+	@Override
+	public void deleteGraph(Node graph) throws EntityDatabaseException {
 		byte[] key = getKeyPrefix(graph);
 		EntityDesc desc = new EntityDesc();
 		desc.graph = graph;
@@ -159,7 +175,6 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 			throw new EntityDatabaseException("Unexpected exception reading from DB", e);
 		}
 	}
-	
 	
 	@Override
 	public void clear() throws EntityDatabaseException {

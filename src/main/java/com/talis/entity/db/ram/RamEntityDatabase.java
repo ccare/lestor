@@ -56,6 +56,19 @@ public class RamEntityDatabase implements EntityDatabase {
 	}
 	
 	@Override
+	public Collection<Quad> getGraph(Node graph) throws EntityDatabaseException {
+		String targetGraph = graph.toString();
+		Collection<Quad> allQuads = new HashSet<Quad>();
+		for (String key : store.keySet()){
+			String[] parts = key.split("\t");
+			String thisGraph = parts[1];
+			if (thisGraph.equals(targetGraph)){
+				allQuads.addAll(store.get(key));
+			}
+		}
+		return allQuads;
+	}
+	@Override
 	public boolean exists(Node subject) throws EntityDatabaseException {
 		String targetSubject = subject.toString();
 		for (String key : store.keySet()){

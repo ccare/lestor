@@ -1,22 +1,27 @@
 package com.talis.entity.db;
 
+import static com.talis.entity.db.TestUtils.assertQuadCollectionsEqual;
+import static com.talis.entity.db.TestUtils.getQuads;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.openjena.riot.out.OutputLangUtils;
+import org.junit.rules.TemporaryFolder;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.talis.entity.EntityDatabase;
 
 public abstract class EntityDatabaseTestBase {
+	
+	@Rule
+	public TemporaryFolder tmpDir = new TemporaryFolder();
 	
 	protected Node subject;
 	protected Node graph;
@@ -37,7 +42,6 @@ public abstract class EntityDatabaseTestBase {
 	
 	@Test
 	public void roundTripStatements() throws Exception{
-		long start = System.currentTimeMillis();
 		db.put(subject, graph, quads);
 		Collection<Quad> other = db.get(subject);
 		assertEquals(quads.size(), other.size());
@@ -178,28 +182,18 @@ public abstract class EntityDatabaseTestBase {
 		assertFalse(db.exists(subject));
 	}
 	
-	public static Collection<Quad> getQuads(Node graph, Node subject, int num){
-		Collection<Quad> quads = new ArrayList<Quad>();
-		for (int i=0; i<num; i++){
-			quads.add(
-					new Quad(	graph,
-								subject,
-								Node.createURI("http://example.com/p"),
-								Node.createURI("http://example.com/o" + i)));
-		}
-		return quads;
-	}
-	
-	public static void printQuads(Collection<Quad> quads){
-		PrintWriter out = new PrintWriter(System.out);
-		for (Quad quad : quads){
-			OutputLangUtils.output(out, quad, null, null);
-		}
-		out.flush();
-	}
-	
-	public static void assertQuadCollectionsEqual(Collection<Quad> first, Collection<Quad> second){
-		assertEquals(first.size(), second.size());
-		assertTrue(first.containsAll(second));
+	@Test
+	public void getGraph() throws Exception{
+		db.put(subject, graph, quads);
+		Node otherGraph = Node.createURI("http://other/graph");
+		Collection<Quad> otherQuads = getQuads(otherGraph, subject, 5);
+		db.put(subject, otherGraph, otherQuads);
+		
+		Collection<Quad> allQuads = new ArrayList<Quad>(quads);
+		allQuads.addAll(otherQuads);
+		
+		assertQuadCollectionsEqual(allQuads, db.get(subject));
+		assertQuadCollectionsEqual(quads, db.getGraph(graph));
+		assertQuadCollectionsEqual(otherQuads, db.getGraph(otherGraph));
 	}
 }

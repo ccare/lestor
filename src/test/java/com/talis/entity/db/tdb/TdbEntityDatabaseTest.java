@@ -14,9 +14,7 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.ReadWrite;
@@ -31,9 +29,6 @@ import com.talis.platform.joon.VersionedDirectoryProvider;
 public class TdbEntityDatabaseTest extends EntityDatabaseTestBase{
 
 	DatasetProvider datasetProvider;
-	
-	@Rule
-	public TemporaryFolder tmpDir = new TemporaryFolder();
 	
 	@Before
 	public void setup() throws Exception {

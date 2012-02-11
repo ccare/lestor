@@ -3,6 +3,7 @@ package com.talis.entity.db.babudb;
 import java.io.File;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xtreemfs.babudb.BabuDBFactory;
@@ -39,6 +40,7 @@ public class DatabaseManager {
 		props.setProperty("babudb.checkInterval", "30");
 		props.setProperty("babudb.baseDir", rootDir.getAbsolutePath());
 		props.setProperty("babudb.logDir", rootDir.getAbsolutePath() + "/logs");
+		props.setProperty("babudb.maxLogfileSize", "" + FileUtils.ONE_MB * 64);
 		
 		try {
 			BabuDBConfig conf = new BabuDBConfig(props);
