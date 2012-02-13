@@ -29,10 +29,6 @@
   <properties>
     <tdb.version>0.9.0-incubating-TALIS-RC5</tdb.version>
     <joon.version>0.2.66</joon.version>
-    <leveldb-api-version>0.1</leveldb-api-version>
-    <leveldb-version>0.2</leveldb-version>
-    <leveldbjni-version>1.1</leveldbjni-version>
-    <krati-version>0.4.3</krati-version>
     <compress-lzf.version>0.9.2</compress-lzf.version>
     <snappy.version>1.0.4.1</snappy.version>
   </properties>
@@ -72,43 +68,23 @@
     </dependency>
 
     <dependency>
-      <groupId>org.iq80.leveldb</groupId>
-      <artifactId>leveldb-api</artifactId>
-      <version>${leveldb-api-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.iq80.leveldb</groupId>
-      <artifactId>leveldb</artifactId>
-      <version>${leveldb-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.fusesource.leveldbjni</groupId>
-      <artifactId>leveldbjni-linux64</artifactId>
-      <version>${leveldbjni-version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sna-projects.krati</groupId>
-      <artifactId>krati</artifactId>
-      <version>${krati-version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.ning</groupId>
       <artifactId>compress-lzf</artifactId>
       <version>${compress-lzf.version}</version>
     </dependency>
+    
     <dependency>
       <groupId>org.xerial.snappy</groupId>
       <artifactId>snappy-java</artifactId>
       <version>${snappy.version}</version>
       <type>jar</type>
     </dependency>
+    
     <dependency>
       <groupId>org.xtreemfs.babudb</groupId>
       <artifactId>BabuDB</artifactId>
       <version>0.5.6</version>
     </dependency>
-
-
 
     
     <!-- test dependencies -->
