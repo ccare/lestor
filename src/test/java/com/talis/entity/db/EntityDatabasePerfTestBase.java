@@ -4,8 +4,11 @@ import static com.talis.entity.db.TestUtils.getQuads;
 import static com.talis.entity.db.TestUtils.showMemory;
 import static com.talis.entity.db.TestUtils.tryForceGC;
 
+import java.io.File;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -66,13 +69,13 @@ public abstract class EntityDatabasePerfTestBase {
 		db.begin();
 		for (int i=0;i<graphs; i++){
 			Node thisGraph = Node.createURI(graph.getURI() + "_" + i);
-			db.put( subject, graph, getQuads(thisGraph, subject, stmtsPerGraph));
+			db.put( subject, thisGraph, getQuads(thisGraph, subject, stmtsPerGraph));
 		}
 		db.commit();
 		System.out.println(String.format("Populated %s graphs (%s total statements) in %s ms",
-								graphs, graphs * quads.size(), (System.currentTimeMillis() - start)));
-		int iter = 10000;
+								graphs, graphs * stmtsPerGraph, (System.currentTimeMillis() - start)));
 		
+		int iter = Math.round(graphs / 4);
 		Random r = new Random();
 		start = System.currentTimeMillis();
 		for (int i=0; i<iter; i++){
@@ -88,26 +91,48 @@ public abstract class EntityDatabasePerfTestBase {
 	}
 	
 	@Test
-	public void benchmarkClearingSingleGraph() throws EntityDatabaseException{
-		System.out.println("Clearing Single Graph");
-		int graphs = 100000;
-		int stmtsPerGraph = 20;
+	public void clearingSingleSmallGraphFromMany() throws EntityDatabaseException{
+		System.out.println("Clearing Single Small Graph In Many");
+		testClearingSingleGraph(100000, 20);
+	}
+	
+	@Test
+	public void clearingSingleLargeGraphFromFew() throws EntityDatabaseException{
+		System.out.println("Clearing Single Large Graph In Few");
+		testClearingSingleGraph(20, 100000);
+	}
+		
+	private void testClearingSingleGraph(int graphs, int stmtsPerGraph) throws EntityDatabaseException{
+		
+		int stmtsPerSubject = 20;
+		int subjectCount = Math.round(stmtsPerGraph / stmtsPerSubject);
 		long start = System.currentTimeMillis();
 		db.begin();
+		
+		int quadCount = 0;
+		
 		for (int i=0;i<graphs; i++){
-			Node thisGraph = Node.createURI(graph.getURI() + "_" + i);
-			db.put( subject, graph, getQuads(thisGraph, subject, stmtsPerGraph));
+			Node thisGraph = Node.createURI(graph.getURI() + "/" + i);
+			for (int j=0;j<subjectCount;j++){
+				Node thisSubject = Node.createURI(subject.getURI() + "/" + i + "/" + j);
+				db.put( thisSubject, thisGraph, getQuads(thisGraph, thisSubject, stmtsPerSubject));
+				quadCount += stmtsPerSubject;
+			}
 		}
 		db.commit();
 		System.out.println(String.format("Populated %s graphs (%s total statements) in %s ms",
-								graphs, graphs * quads.size(), (System.currentTimeMillis() - start)));
-		int iter = 10000;
-		
+								graphs, quadCount, (System.currentTimeMillis() - start)));
+				
+		int iter = Math.round(graphs / 4);
+		Set<Node> deleted = new HashSet<Node>();
 		Random r = new Random();
 		start = System.currentTimeMillis();
-		for (int i=0; i<iter; i++){
-			Node thisGraph = Node.createURI(graph.getURI() + "_" + r.nextInt(graphs));
-			db.deleteGraph( thisGraph );	
+		while(deleted.size() < iter){
+			Node thisGraph = Node.createURI(graph.getURI() + "/" + r.nextInt(graphs));
+			if (!deleted.contains(thisGraph)){
+				db.deleteGraph( thisGraph );
+				deleted.add(thisGraph);
+			}
 		}
 		
 		long end = System.currentTimeMillis();
