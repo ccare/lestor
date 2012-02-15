@@ -3,10 +3,8 @@ package com.talis.entity.db.babudb;
 import java.io.File;
 import java.util.Properties;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xtreemfs.babudb.BabuDBFactory;
 import org.xtreemfs.babudb.api.BabuDB;
 import org.xtreemfs.babudb.api.database.Database;
 import org.xtreemfs.babudb.api.exception.BabuDBException;
@@ -14,6 +12,7 @@ import org.xtreemfs.babudb.config.BabuDBConfig;
 import org.xtreemfs.babudb.config.ConfigBuilder;
 import org.xtreemfs.babudb.log.DiskLogger.SyncMode;
 
+import com.google.inject.Inject;
 import com.talis.entity.EntityDatabaseException;
 
 public class DatabaseManager {
@@ -23,9 +22,16 @@ public class DatabaseManager {
 	public static final String DB_LOCATION_PROPERTY = "com.talis.entity.store.babudb.dir";
 	public static final String DB_DEFAULT_LOCATION = "/mnt/entity-cache/babudb";
 
+	public static final int CHECK_INTERVAL_DEFAULT = 30;
+	public static final String CHECK_INTERVAL_PROPERTY = "com.talis.entity.store.babudb.checkInterval";
+	
+	public static final long MAX_LOG_SIZE_DEFAULT = 1024 * 1024 * 64;
+	public static final String MAX_LOG_SIZE_PROPERTY = "com.talis.entity.store.babudb.maxLogfileSize";
+	
 	private final BabuDB dbSystem;
 	
-	public DatabaseManager(){
+	@Inject
+	public DatabaseManager(BabuDBFactoryWrapper babuDBFactory){
 		LOG.info("Initialising DatabaseProvider");
 		File rootDir = initRootDir();
 		
@@ -37,14 +43,14 @@ public class DatabaseManager {
 									.build();
 		// now set our specific properties
 		Properties props = config.getProps();
-		props.setProperty("babudb.checkInterval", "30");
 		props.setProperty("babudb.baseDir", rootDir.getAbsolutePath());
 		props.setProperty("babudb.logDir", rootDir.getAbsolutePath() + "/logs");
-		props.setProperty("babudb.maxLogfileSize", "" + FileUtils.ONE_MB * 64);
+		props.setProperty("babudb.checkInterval", System.getProperty(CHECK_INTERVAL_PROPERTY, "" + CHECK_INTERVAL_DEFAULT));
+		props.setProperty("babudb.maxLogfileSize", System.getProperty(MAX_LOG_SIZE_PROPERTY, "" + MAX_LOG_SIZE_DEFAULT));
 		
 		try {
 			BabuDBConfig conf = new BabuDBConfig(props);
-			dbSystem = BabuDBFactory.createBabuDB(conf);
+			dbSystem = babuDBFactory.createBabuDB(conf);
 		} catch (Exception e) {
 			LOG.error("Unable to initialise Database system", e);
 			throw new RuntimeException("Error initialising Database system", e);
@@ -55,12 +61,10 @@ public class DatabaseManager {
 	private File initRootDir(){
 		File dbDir = new File(System.getProperty(DB_LOCATION_PROPERTY, DB_DEFAULT_LOCATION));
        	LOG.info("Initialising Database root directory: {}", dbDir.getAbsolutePath());
-   		if (!dbDir.isDirectory()) {
-   			if (dbDir.exists()) {
-   				String msg = String.format("Invalid Database root: {}", dbDir.getAbsolutePath());
-   				LOG.error(msg);
-   				throw new RuntimeException(msg);
-   			}
+   		if (!dbDir.isDirectory() && dbDir.exists()) {
+			String msg = String.format("Invalid Database root: {}", dbDir.getAbsolutePath());
+			LOG.error(msg);
+			throw new RuntimeException(msg);
    		}
    		return dbDir;
 	}

@@ -15,7 +15,7 @@ public class BabuDbEntityDatabaseTest extends EntityDatabaseTestBase {
 	@Before
 	public void setup() throws Exception{
 		System.setProperty(DatabaseManager.DB_LOCATION_PROPERTY, tmpDir.getRoot().getAbsolutePath());
-		dbManager = new DatabaseManager();
+		dbManager = new DatabaseManager(new BabuDBFactoryWrapper());
 		super.setup();
 	}
 	

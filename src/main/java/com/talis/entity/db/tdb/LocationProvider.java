@@ -3,7 +3,7 @@ package com.talis.entity.db.tdb;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.io.FileUtils;
+import org.openjena.atlas.lib.FileOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,11 +73,8 @@ public class LocationProvider {
 		
 		if (null != currentLiveDirectory){
 			LOG.info("Removing previous directory {}", currentLiveDirectory.getAbsolutePath());
-			try {
-				FileUtils.deleteDirectory(currentLiveDirectory);
-			} catch (IOException e) {
-				LOG.warn("Unable to clean up old Dataset directory", e);
-			}
+			FileOps.clearDirectory(currentLiveDirectory.getAbsolutePath());
+			FileOps.delete(currentLiveDirectory, true);
 		}
 		return getLocation(directoryName);
 	}

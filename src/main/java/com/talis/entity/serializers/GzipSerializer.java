@@ -7,8 +7,6 @@ import java.util.Collection;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.commons.io.IOUtils;
-
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
 
@@ -35,7 +33,14 @@ public class GzipSerializer implements Serializer {
 	@Override
 	public Collection<Quad> deserialize(EntityDesc desc) throws IOException {
 		ByteArrayOutputStream b = new ByteArrayOutputStream();
-        IOUtils.copy(new GZIPInputStream(new ByteArrayInputStream(desc.bytes)), b);
+        GZIPInputStream gz = new GZIPInputStream(new ByteArrayInputStream(desc.bytes));
+        byte[] buf = new byte[1024];
+        int len;
+        while ((len = gz.read(buf)) > 0){
+        	  b.write(buf, 0, len);
+        }
+        gz.close();
+        b.flush();
         desc.bytes = b.toByteArray(); 
         return delegate.deserialize(desc);
 	}

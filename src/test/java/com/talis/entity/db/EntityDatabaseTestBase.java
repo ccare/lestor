@@ -1,7 +1,7 @@
 package com.talis.entity.db;
 
-import static com.talis.entity.db.TestUtils.assertQuadCollectionsEqual;
-import static com.talis.entity.db.TestUtils.getQuads;
+import static com.talis.entity.TestUtils.assertQuadCollectionsEqual;
+import static com.talis.entity.TestUtils.getQuads;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

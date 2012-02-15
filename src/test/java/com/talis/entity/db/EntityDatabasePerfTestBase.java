@@ -1,10 +1,9 @@
 package com.talis.entity.db;
 
-import static com.talis.entity.db.TestUtils.getQuads;
-import static com.talis.entity.db.TestUtils.showMemory;
-import static com.talis.entity.db.TestUtils.tryForceGC;
+import static com.talis.entity.TestUtils.getQuads;
+import static com.talis.entity.TestUtils.showMemory;
+import static com.talis.entity.TestUtils.tryForceGC;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;

@@ -21,6 +21,9 @@ import com.talis.entity.serializers.Serializer;
 
 public class BabuDbEntityDatabase implements EntityDatabase{
 
+	private static final String DB_WRITE_ERROR_MESSAGE = "Unexpected exception writing to DB";
+	private static final String DB_READ_ERROR_MESSAGE = "Unexpected exception reading from DB";
+
 	private static final Logger LOG = LoggerFactory.getLogger(BabuDbEntityDatabase.class);
 	
 	private static final int SUBJECT_INDEX = 0;
@@ -55,8 +58,8 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 			batch.addInsert(GRAPH_INDEX, inverseKey, storageKey);
 			db.insert(batch, null);
 		} catch (Exception e) {
-			LOG.error("Unexpected exception writing to DB", e);
-			throw new EntityDatabaseException("Unexpected exception writing to DB", e);
+			LOG.error(DB_WRITE_ERROR_MESSAGE, e);
+			throw new EntityDatabaseException(DB_WRITE_ERROR_MESSAGE, e);
 		}
 		LOG.debug("Stored entity bytes");		
 	}
@@ -72,8 +75,8 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 			batch.addInsert(GRAPH_INDEX, inverseKey, null);
 			db.insert(batch, null);
 		} catch (Exception e) {
-			LOG.error("Unexpected exception writing to DB", e);
-			throw new EntityDatabaseException("Unexpected exception writing to DB", e);
+			LOG.error(DB_WRITE_ERROR_MESSAGE, e);
+			throw new EntityDatabaseException(DB_WRITE_ERROR_MESSAGE, e);
 		}
 		LOG.debug("Deleted entity bytes");
 	}
@@ -104,8 +107,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 			Iterator<Entry<byte[], byte[]>> iterator = db.prefixLookup(SUBJECT_INDEX, key, null).get();
 			while(iterator.hasNext()) {
 			    Entry<byte[], byte[]> pair = iterator.next();
-			    String nextKey = asString(pair.getKey());
-			    String[] keyParts = new String(nextKey).split("\t");
+			    String[] keyParts = asString(pair.getKey()).split("\t");
 			    if (! subject.getURI().equals(keyParts[0])){
 			    	continue;
 			    }
@@ -116,8 +118,8 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 				quads.addAll(serializer.deserialize(desc));
 		  }
 		} catch (Exception e) {
-			LOG.error("Unexpected exception reading from DB", e);		
-			throw new EntityDatabaseException("Unexpected exception reading from DB", e);
+			LOG.error(DB_READ_ERROR_MESSAGE, e);		
+			throw new EntityDatabaseException(DB_READ_ERROR_MESSAGE, e);
 		} 
 		LOG.debug("Combined entity descriptions");
 		return quads;
@@ -132,8 +134,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 		  Iterator<Entry<byte[], byte[]>> iterator = db.prefixLookup(GRAPH_INDEX, key, null).get();
 		  while (iterator.hasNext()){
 			  Entry<byte[], byte[]> pair = iterator.next();
-			  String nextKey = asString(pair.getKey());
-			  String[] keyParts = new String(nextKey).split("\t");
+			  String[] keyParts = asString(pair.getKey()).split("\t");
 			  if (! graph.getURI().equals(keyParts[0])){
 			    	continue;
 			  }
@@ -144,8 +145,8 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 			  quads.addAll(serializer.deserialize(desc));
 		  }
 		} catch (Exception e) {
-			LOG.error("Unexpected exception reading from DB", e);		
-			throw new EntityDatabaseException("Unexpected exception reading from DB", e);
+			LOG.error(DB_READ_ERROR_MESSAGE, e);		
+			throw new EntityDatabaseException(DB_READ_ERROR_MESSAGE, e);
 		}
 		return quads;
 	}
@@ -160,8 +161,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 		  Iterator<Entry<byte[], byte[]>> iterator = db.prefixLookup(GRAPH_INDEX, key, null).get();
 		  while (iterator.hasNext()){
 			  Entry<byte[], byte[]> pair = iterator.next();
-			  String nextKey = asString(pair.getKey());
-			  String[] keyParts = new String(nextKey).split("\t");
+			  String[] keyParts = asString(pair.getKey()).split("\t");
 			  if (! graph.getURI().equals(keyParts[0])){
 			    	continue;
 			  }
@@ -171,8 +171,8 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 		  }
 		  db.insert(batch, null);
 		} catch (Exception e) {
-			LOG.error("Unexpected exception reading from DB", e);		
-			throw new EntityDatabaseException("Unexpected exception reading from DB", e);
+			LOG.error(DB_READ_ERROR_MESSAGE, e);		
+			throw new EntityDatabaseException(DB_READ_ERROR_MESSAGE, e);
 		}
 	}
 	
@@ -204,13 +204,13 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 	}
 
 	@Override
-	public void begin() throws EntityDatabaseException {}
+	public void begin() throws EntityDatabaseException { /* noop */ }
 
 	@Override
-	public void commit() throws EntityDatabaseException {}
+	public void commit() throws EntityDatabaseException { /* noop */ }
 
 	@Override
-	public void abort() throws EntityDatabaseException {}
+	public void abort() throws EntityDatabaseException { /* noop */ }
 
 	private byte[] getStorageKey(Node subject, Node graph){
 		return getKeyString(subject, graph).getBytes();

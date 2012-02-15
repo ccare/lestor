@@ -1,7 +1,7 @@
 package com.talis.entity.db;
 
-import static com.talis.entity.db.TestUtils.showMemory;
-import static com.talis.entity.db.TestUtils.tryForceGC;
+import static com.talis.entity.TestUtils.showMemory;
+import static com.talis.entity.TestUtils.tryForceGC;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
@@ -94,13 +94,11 @@ public abstract class EntityDatabaseConcurrencyTestBase {
 		
 		@Override
 		public void run() {
-//			System.out.println(String.format("Load worker %s ready, waiting to start", id));
 			try {
 				startGate.await();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-//			System.out.println("Starting load " + id);
 			long start = System.currentTimeMillis();
 			RiotReader.createParserNQuads(in, sink).parse();
 			sink.flush();

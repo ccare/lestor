@@ -21,7 +21,7 @@ import com.hp.hpl.jena.sparql.core.Quad;
 
 public class POSerializer implements Serializer {
 
-	private final Logger LOG = LoggerFactory.getLogger(POSerializer.class); 
+	private static final Logger LOG = LoggerFactory.getLogger(POSerializer.class); 
 	
 	private final NodeFormatter nodeFmt = new NodeFormatterNT() ;
 	
