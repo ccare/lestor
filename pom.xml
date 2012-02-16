@@ -4,7 +4,7 @@
   <groupId>com.talis</groupId>
   <artifactId>lestor</artifactId>
   <packaging>jar</packaging>
-  <version>0.11</version>
+  <version>0.12-SNAPSHOT</version>
   <name>Lestor</name>
   <url>https://github.com/talis/lestor</url>
   <inceptionYear>2012</inceptionYear>
