@@ -28,6 +28,17 @@
     <url>http://github.com/talis/lestor</url>
   </scm>
   
+  <distributionManagement>
+    <repository>
+      <id>talis-releases</id>
+      <url>http://oss.talisplatform.com/content/repositories/talis-releases</url>
+    </repository>
+    <snapshotRepository>
+      <id>talis-snapshots</id>
+      <url>http://oss.talisplatform.com/content/repositories/talis-snapshots</url>
+    </snapshotRepository>
+  </distributionManagement>
+  
   <developers>
     <developer>
       <name>Sam Tunnicliffe</name>
