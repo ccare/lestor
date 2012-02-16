@@ -4,7 +4,7 @@
   <groupId>com.talis</groupId>
   <artifactId>lestor</artifactId>
   <packaging>jar</packaging>
-  <version>0.10-SNAPSHOT</version>
+  <version>0.10</version>
   <name>Lestor</name>
   <url>https://github.com/talis/lestor</url>
   <inceptionYear>2012</inceptionYear>
@@ -337,7 +337,7 @@
             <ignores>
               <ignore>org.slf4j.*</ignore>
             </ignores>
-            <excludes/>
+            <excludes />
           </instrumentation>
         </configuration>
       </plugin>
