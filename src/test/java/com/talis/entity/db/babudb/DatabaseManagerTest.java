@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.xtreemfs.babudb.BabuDBFactory;
 import org.xtreemfs.babudb.api.BabuDB;
+import org.xtreemfs.babudb.api.Checkpointer;
 import org.xtreemfs.babudb.api.database.Database;
 import org.xtreemfs.babudb.api.exception.BabuDBException;
 import org.xtreemfs.babudb.api.exception.BabuDBException.ErrorCode;
@@ -110,14 +111,22 @@ public class DatabaseManagerTest {
 	}
 	
 	@Test
-	public void shutdownDelegatesToDbSystem() throws Exception{
+	public void shutdownCheckpointsAndDelegatesToDbSystem() throws Exception{
+		Checkpointer checkpointer = createStrictMock(Checkpointer.class);
+		checkpointer.checkpoint();
+		checkpointer.waitForCheckpoint();
+		replay(checkpointer);
+		
 		final BabuDB dbSystem = createStrictMock(BabuDB.class);
+		dbSystem.getCheckpointer();
+		expectLastCall().andReturn(checkpointer).anyTimes();
 		dbSystem.shutdown(true);
 		replay(dbSystem);
 		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
 		try{
 			manager.shutDown();
 		}finally{
+			verify(checkpointer);
 			verify(dbSystem);
 		}
 	}
@@ -142,15 +151,6 @@ public class DatabaseManagerTest {
 		assertNotNull(factory.suppliedConfig);
 		assertEquals(99, factory.suppliedConfig.getCheckInterval());
 		assertEquals(99999, factory.suppliedConfig.getMaxLogfileSize());
-	}
-	
-	class ObservableFactory extends BabuDBFactoryWrapper{
-		BabuDBConfig suppliedConfig;
-		@Override
-		public BabuDB createBabuDB(BabuDBConfig config) throws BabuDBException {
-			suppliedConfig = config;
-			return super.createBabuDB(config);
-		}
 	}
 	
 	@Test (expected=RuntimeException.class) 
@@ -254,7 +254,15 @@ public class DatabaseManagerTest {
 	@Test
 	public void exceptionShuttingDownDbSystemIsSwallowed() throws Exception{
 		BabuDBException expectedException = new BabuDBException(ErrorCode.INTERNAL_ERROR, "BANG!");
+		
+		Checkpointer checkpointer = createStrictMock(Checkpointer.class);
+		checkpointer.checkpoint();
+		checkpointer.waitForCheckpoint();
+		replay(checkpointer);
+		
 		final BabuDB dbSystem = createStrictMock(BabuDB.class);
+		dbSystem.getCheckpointer();
+		expectLastCall().andReturn(checkpointer).anyTimes();
 		dbSystem.shutdown(true);
 		expectLastCall().andThrow(expectedException);
 		replay(dbSystem);
@@ -276,5 +284,15 @@ public class DatabaseManagerTest {
 		};
 		return factory;
 	}
+
+	class ObservableFactory extends BabuDBFactoryWrapper{
+		BabuDBConfig suppliedConfig;
+		@Override
+		public BabuDB createBabuDB(BabuDBConfig config) throws BabuDBException {
+			suppliedConfig = config;
+			return super.createBabuDB(config);
+		}
+	}
+
 	
 }

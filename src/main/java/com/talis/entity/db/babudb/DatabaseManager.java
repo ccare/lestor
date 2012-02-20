@@ -17,6 +17,9 @@
 package com.talis.entity.db.babudb;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -27,6 +30,7 @@ import org.xtreemfs.babudb.api.exception.BabuDBException;
 import org.xtreemfs.babudb.config.BabuDBConfig;
 import org.xtreemfs.babudb.config.ConfigBuilder;
 import org.xtreemfs.babudb.log.DiskLogger.SyncMode;
+import org.xtreemfs.foundation.logging.Logging;
 
 import com.google.inject.Inject;
 import com.talis.entity.EntityDatabaseException;
@@ -43,6 +47,9 @@ public class DatabaseManager {
 	
 	public static final long MAX_LOG_SIZE_DEFAULT = 1024 * 1024 * 64;
 	public static final String MAX_LOG_SIZE_PROPERTY = "com.talis.entity.store.babudb.maxLogfileSize";
+	
+	public static final String DEBUG_LOG_LEVEL_PROPERTY = "com.talis.entity.store.babudb.debugLogLevel";
+	public static final String DEBUG_LOG_FILE_PROPERTY = "com.talis.entity.store.babudb.debugLogFile";
 	
 	private final BabuDB dbSystem;
 	
@@ -63,6 +70,17 @@ public class DatabaseManager {
 		props.setProperty("babudb.logDir", rootDir.getAbsolutePath() + "/logs");
 		props.setProperty("babudb.checkInterval", System.getProperty(CHECK_INTERVAL_PROPERTY, "" + CHECK_INTERVAL_DEFAULT));
 		props.setProperty("babudb.maxLogfileSize", System.getProperty(MAX_LOG_SIZE_PROPERTY, "" + MAX_LOG_SIZE_DEFAULT));
+		props.setProperty("babudb.debug.level", System.getProperty(DEBUG_LOG_LEVEL_PROPERTY, "" + getDebugLogLevel()));
+		
+		if (null != System.getProperty(DEBUG_LOG_FILE_PROPERTY)){
+			LOG.info("Redirecting BabuDB debug logs to " + System.getProperty(DEBUG_LOG_FILE_PROPERTY));
+			File debugLog = new File(System.getProperty(DEBUG_LOG_FILE_PROPERTY));
+			try {
+				Logging.redirect(new PrintStream(new FileOutputStream(debugLog)));
+			} catch (FileNotFoundException e) {
+				LOG.error("Unable to redirect BabuDB debug log", e);
+			}
+		}
 		
 		try {
 			BabuDBConfig conf = new BabuDBConfig(props);
@@ -70,6 +88,29 @@ public class DatabaseManager {
 		} catch (Exception e) {
 			LOG.error("Unable to initialise Database system", e);
 			throw new RuntimeException("Error initialising Database system", e);
+		}
+	}
+	
+	public final int getDebugLogLevel(){
+		String logLevel = System.getProperty(DEBUG_LOG_LEVEL_PROPERTY); 
+		if ("EMERGENCY".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_EMERG;
+		}else if ("ALERT".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_ALERT;
+		}else if ("CRITICAL".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_CRIT;
+		}else if ("ERROR".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_ERROR;
+		}else if ("WARN".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_WARN;
+		}else if ("NOTICE".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_NOTICE;
+		}else if ("INFO".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_INFO;
+		}else if ("DEBUG".equalsIgnoreCase(logLevel)){
+			return Logging.LEVEL_DEBUG;
+		}else{
+			return Logging.LEVEL_WARN;
 		}
 	}
 	
@@ -115,8 +156,18 @@ public class DatabaseManager {
 	
 	public void shutDown(){
 		try {
+			LOG.info("Forcing checkpoint on database system");
+			// this call should be blocking
+			dbSystem.getCheckpointer().checkpoint();
+			
+			LOG.info("Call for checkpoint returned, waiting for completion just in case");
+			// and just to be sure...
+			dbSystem.getCheckpointer().waitForCheckpoint();
+			
+			LOG.info("Checkpointing complete, shutting down");
+			// now shutdown the database
 			dbSystem.shutdown(true);
-		} catch (BabuDBException e) {
+		} catch (Exception e) {
 			LOG.error("Error shutting down database manager", e);
 		}
 	}
