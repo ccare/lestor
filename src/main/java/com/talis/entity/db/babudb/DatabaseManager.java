@@ -156,15 +156,7 @@ public class DatabaseManager {
 	
 	public void shutDown(){
 		try {
-			LOG.info("Forcing checkpoint on database system");
-			// this call should be blocking
-			dbSystem.getCheckpointer().checkpoint();
-			
-			LOG.info("Call for checkpoint returned, waiting for completion just in case");
-			// and just to be sure...
-			dbSystem.getCheckpointer().waitForCheckpoint();
-			
-			LOG.info("Checkpointing complete, shutting down");
+			LOG.info("Shutting down");
 			// now shutdown the database
 			dbSystem.shutdown(true);
 		} catch (Exception e) {

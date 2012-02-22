@@ -112,21 +112,13 @@ public class DatabaseManagerTest {
 	
 	@Test
 	public void shutdownCheckpointsAndDelegatesToDbSystem() throws Exception{
-		Checkpointer checkpointer = createStrictMock(Checkpointer.class);
-		checkpointer.checkpoint();
-		checkpointer.waitForCheckpoint();
-		replay(checkpointer);
-		
 		final BabuDB dbSystem = createStrictMock(BabuDB.class);
-		dbSystem.getCheckpointer();
-		expectLastCall().andReturn(checkpointer).anyTimes();
 		dbSystem.shutdown(true);
 		replay(dbSystem);
 		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
 		try{
 			manager.shutDown();
 		}finally{
-			verify(checkpointer);
 			verify(dbSystem);
 		}
 	}
