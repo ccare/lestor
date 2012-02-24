@@ -17,11 +17,14 @@
 package com.talis.entity.db.ram;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
@@ -30,6 +33,32 @@ import com.talis.entity.EntityDatabaseException;
 
 public class RamEntityDatabase implements EntityDatabase {
 
+	public static final Comparator<? super Quad> QUAD_COMPARATOR = new Comparator<Quad>(){
+		@Override
+		public int compare(Quad a, Quad b) {
+			int cmp = a.getSubject().toString().compareTo(b.getSubject().toString()); 
+			if (cmp != 0){
+				return cmp;
+			}
+			cmp = a.getPredicate().toString().compareTo(b.getPredicate().toString()); 
+			if (cmp != 0){
+				return cmp;
+			}
+			cmp = a.getObject().toString().compareTo(b.getObject().toString()); 
+			if (cmp != 0){
+				return cmp;
+			}
+			return a.getGraph().toString().compareTo(b.getGraph().toString()); 
+		}
+	};
+
+	private static final Comparator<? super Node> NODE_COMPARATOR = new Comparator<Node>(){
+		@Override
+		public int compare(Node o1, Node o2) {
+			return (o1.getURI().compareTo(o2.getURI()));
+		}
+	};
+	
 	private Map<String, Collection<Quad>> store = new TreeMap<String, Collection<Quad>>();
 	private Map<Node, Set<Node>> graphIndex = new HashMap<Node, Set<Node>>();
 	
@@ -65,7 +94,7 @@ public class RamEntityDatabase implements EntityDatabase {
 	@Override
 	public Collection<Quad> get(Node subject) throws EntityDatabaseException {
 		String targetSubject = subject.toString();
-		Collection<Quad> allQuads = new HashSet<Quad>();
+		Collection<Quad> allQuads = new TreeSet<Quad>(QUAD_COMPARATOR);
 		for (String key : store.keySet()){
 			String[] parts = key.split("\t");
 			String thisSubject = parts[0];
@@ -129,5 +158,20 @@ public class RamEntityDatabase implements EntityDatabase {
 	public void close(){
 		store = null;
 		graphIndex = null;
+	}
+
+	@Override
+	public Iterable<Entry<Node, Iterable<Quad>>> all()
+			throws EntityDatabaseException {
+		String previous = null;
+		Map<Node, Iterable<Quad>> everything = new TreeMap<Node, Iterable<Quad>>(NODE_COMPARATOR);
+		for (String key : store.keySet()){
+			String subject = key.split("\t")[0];
+			if (key != previous){
+			  Node subjectURI = Node.createURI(subject);
+			  everything.put(subjectURI, get(subjectURI));
+			}
+		}
+		return everything.entrySet();
 	}
 }

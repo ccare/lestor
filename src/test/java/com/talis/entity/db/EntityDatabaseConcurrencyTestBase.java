@@ -38,18 +38,16 @@ public abstract class EntityDatabaseConcurrencyTestBase {
 	protected String id;
 	protected EntityDatabase[] dbs;
 	protected Runtime runtime;
+	public static final int NUM_DBS = 5;
 	
 	@Before
 	public void setup() throws Exception{
 		tryForceGC();
 		id = "test-id";
-		dbs = new EntityDatabase[5];
-		dbs[0] = getDatabase();
-		dbs[1] = getDatabase();
-		dbs[2] = getDatabase();
-		dbs[3] = getDatabase();
-		dbs[4] = getDatabase();
-
+		dbs = new EntityDatabase[NUM_DBS];
+		for(int i=0;i<NUM_DBS;i++){
+			dbs[i] = getDatabase();
+		}
 		System.out.println();
 		System.out.println(dbs[0].getClass().getName());
 		showMemory();
@@ -78,7 +76,7 @@ public abstract class EntityDatabaseConcurrencyTestBase {
 		System.out.println("Loading dataset");
 		CountDownLatch startGate = new CountDownLatch(1);
 		CountDownLatch endGate = new CountDownLatch(dbs.length);
-		for (int i=0;i<dbs.length;i++){
+		for (int i=0;i<NUM_DBS;i++){
 			InputStream in = new GZIPInputStream(
 								new BufferedInputStream(
 									this.getClass().getResourceAsStream(resource)));

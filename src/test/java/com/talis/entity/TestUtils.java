@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 
 import org.apache.commons.io.FileUtils;
 import org.openjena.riot.out.OutputLangUtils;
@@ -43,13 +44,26 @@ public class TestUtils {
 		return quads;
 	}
 	
-	public static void printQuads(Collection<Quad> quads){
+	public static void printQuads(Iterable<Quad> quads){
 		PrintWriter out = new PrintWriter(System.out);
 		for (Quad quad : quads){
 			OutputLangUtils.output(out, quad, null, null);
 		}
 		out.flush();
 	}
+	
+	public static void assertQuadIterablesEqual(Iterable<Quad> first, Iterable<Quad> second){
+		Collection<Quad> a = new HashSet<Quad>();
+		for (Quad q : first){
+			a.add(q);
+		}
+		Collection<Quad> b = new HashSet<Quad>();
+		for (Quad q : second){
+			b.add(q);
+		}
+		assertQuadCollectionsEqual(a, b);
+	}
+	
 	
 	public static void assertQuadCollectionsEqual(Collection<Quad> first, Collection<Quad> second){
 		assertEquals(first.size(), second.size());

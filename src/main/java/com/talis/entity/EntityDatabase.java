@@ -17,6 +17,7 @@
 package com.talis.entity;
 
 import java.util.Collection;
+import java.util.Map.Entry;
 
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
@@ -29,8 +30,10 @@ public interface EntityDatabase {
 	public void deleteGraph(Node graph) throws EntityDatabaseException;
 	
 	public boolean exists(Node subject) throws EntityDatabaseException;
-	public Collection<Quad> get(Node subject) throws EntityDatabaseException;
-	public Collection<Quad> getGraph(Node graph) throws EntityDatabaseException;
+	public Iterable<Quad> get(Node subject) throws EntityDatabaseException;
+	public Iterable<Quad> getGraph(Node graph) throws EntityDatabaseException;
+	
+	public Iterable<Entry<Node, Iterable<Quad>>> all() throws EntityDatabaseException;
 	
 	public void clear() throws EntityDatabaseException;
 	public void close() throws EntityDatabaseException;

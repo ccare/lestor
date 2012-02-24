@@ -19,9 +19,11 @@ package com.talis.entity.db.babudb;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xtreemfs.babudb.api.BabuDB;
@@ -32,16 +34,12 @@ import org.xtreemfs.babudb.config.ConfigBuilder;
 import org.xtreemfs.babudb.log.DiskLogger.SyncMode;
 import org.xtreemfs.foundation.logging.Logging;
 
-import com.google.inject.Inject;
 import com.talis.entity.EntityDatabaseException;
 
 public class DatabaseManager {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(DatabaseManager.class);
 	
-	public static final String DB_LOCATION_PROPERTY = "com.talis.entity.store.babudb.dir";
-	public static final String DB_DEFAULT_LOCATION = "/mnt/entity-cache/babudb";
-
 	public static final int CHECK_INTERVAL_DEFAULT = 30;
 	public static final String CHECK_INTERVAL_PROPERTY = "com.talis.entity.store.babudb.checkInterval";
 	
@@ -53,10 +51,9 @@ public class DatabaseManager {
 	
 	private final BabuDB dbSystem;
 	
-	@Inject
-	public DatabaseManager(BabuDBFactoryWrapper babuDBFactory){
+	public DatabaseManager(File dbDir, BabuDBFactoryWrapper babuDBFactory){
 		LOG.info("Initialising DatabaseProvider");
-		File rootDir = initRootDir();
+		initDbDir(dbDir);
 		
 		// use the builder to get a config with the default values
 		BabuDBConfig config = new ConfigBuilder()
@@ -66,8 +63,8 @@ public class DatabaseManager {
 									.build();
 		// now set our specific properties
 		Properties props = config.getProps();
-		props.setProperty("babudb.baseDir", rootDir.getAbsolutePath());
-		props.setProperty("babudb.logDir", rootDir.getAbsolutePath() + "/logs");
+		props.setProperty("babudb.baseDir", dbDir.getAbsolutePath());
+		props.setProperty("babudb.logDir", dbDir.getAbsolutePath() + "/logs");
 		props.setProperty("babudb.checkInterval", System.getProperty(CHECK_INTERVAL_PROPERTY, "" + CHECK_INTERVAL_DEFAULT));
 		props.setProperty("babudb.maxLogfileSize", System.getProperty(MAX_LOG_SIZE_PROPERTY, "" + MAX_LOG_SIZE_DEFAULT));
 		props.setProperty("babudb.debug.level", System.getProperty(DEBUG_LOG_LEVEL_PROPERTY, "" + getDebugLogLevel()));
@@ -115,15 +112,14 @@ public class DatabaseManager {
 	}
 	
 
-	private File initRootDir(){
-		File dbDir = new File(System.getProperty(DB_LOCATION_PROPERTY, DB_DEFAULT_LOCATION));
-       	LOG.info("Initialising Database root directory: {}", dbDir.getAbsolutePath());
-   		if (!dbDir.isDirectory() && dbDir.exists()) {
-			String msg = String.format("Invalid Database root: {}", dbDir.getAbsolutePath());
-			LOG.error(msg);
-			throw new RuntimeException(msg);
-   		}
-   		return dbDir;
+	private void initDbDir(File dbDir){
+       	LOG.info("Initialising Database directory: {}", dbDir.getAbsolutePath());
+		try{
+       		FileUtils.forceMkdir(dbDir);
+		} catch (IOException e) {
+			LOG.error("Error creating Database directory", e);
+			throw new RuntimeException("Unable to create database", e);
+		}
 	}
 	
 	public Database getDatabase(String dbName) throws EntityDatabaseException{
@@ -157,10 +153,10 @@ public class DatabaseManager {
 	public void shutDown(){
 		try {
 			LOG.info("Shutting down");
-			// now shutdown the database
 			dbSystem.shutdown(true);
 		} catch (Exception e) {
 			LOG.error("Error shutting down database manager", e);
 		}
 	}
+	
 }

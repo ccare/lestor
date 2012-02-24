@@ -16,7 +16,7 @@
 
 package com.talis.entity.db;
 
-import static com.talis.entity.TestUtils.assertQuadCollectionsEqual;
+import static com.talis.entity.TestUtils.assertQuadIterablesEqual;
 import static com.talis.entity.TestUtils.getQuads;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -24,12 +24,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map.Entry;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.Iterables;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.talis.entity.EntityDatabase;
@@ -59,9 +61,8 @@ public abstract class EntityDatabaseTestBase {
 	@Test
 	public void roundTripStatements() throws Exception{
 		db.put(subject, graph, quads);
-		Collection<Quad> other = db.get(subject);
-		assertEquals(quads.size(), other.size());
-		assertTrue(other.containsAll(quads));
+		Iterable<Quad> other = db.get(subject);
+		assertQuadIterablesEqual(quads, other);
 	}
 	
 	@Test
@@ -79,10 +80,8 @@ public abstract class EntityDatabaseTestBase {
 		Collection<Quad> toBeExcluded = getQuads(graph, excludeMe, stmtsPerGraph);
 		db.put(excludeMe, graph, toBeExcluded);
 		
-		Collection<Quad> aggregate = db.get(subject);
-		assertEquals(quads.size(), aggregate.size());
-		assertTrue(aggregate.containsAll(quads));
-		assertFalse(aggregate.containsAll(toBeExcluded));
+		Iterable<Quad> aggregate = db.get(subject);
+		assertQuadIterablesEqual(quads, aggregate);
 	}
 
 	@Test
@@ -102,16 +101,15 @@ public abstract class EntityDatabaseTestBase {
 		db.put(subject, graph, q1);
 		db.put(subject, otherGraph, q2);
 		
-		assertEquals(2, db.get(subject).size());
+		assertEquals(2, Iterables.size(db.get(subject)));
 		db.delete(subject, graph);
-		assertEquals(1, db.get(subject).size());
-		assertTrue(db.get(subject).containsAll(q2));
+		assertQuadIterablesEqual(q2, db.get(subject));
 	}
 		
 	@Test
 	public void returnEmptyQuadCollectionIfEntityNotStored() throws Exception {
 		db.clear();
-		assertTrue(db.get(subject).isEmpty());
+		assertTrue(Iterables.isEmpty(db.get(subject)));
 	}
 	
 	@Test
@@ -126,11 +124,11 @@ public abstract class EntityDatabaseTestBase {
 			db.put(subject, graph, cbd);
 		}
 		
-		Collection<Quad> other = db.get(subject);
-		assertEquals(quads.size(), other.size());
+		Iterable<Quad> other = db.get(subject);
+		assertEquals(quads.size(), Iterables.size(other));
 		
 		db.clear();
-		assertTrue(db.get(subject).isEmpty());	
+		assertTrue(Iterables.isEmpty(db.get(subject)));	
 	}
 	
 	@Test
@@ -149,9 +147,9 @@ public abstract class EntityDatabaseTestBase {
 		subject = Node.createURI("http://example.com/s0");
 		graph = Node.createURI("http://example.com/g0");
 		
-		assertFalse(db.get(subject).isEmpty());
+		assertFalse(Iterables.isEmpty(db.get(subject)));
 		db.deleteGraph(graph);
-		assertTrue(db.get(subject).isEmpty());	
+		assertTrue(Iterables.isEmpty(db.get(subject)));	
 	}
 	
 	@Test
@@ -169,10 +167,10 @@ public abstract class EntityDatabaseTestBase {
 		
 		graph = Node.createURI("http://example.com/g0");
 		
-		assertEquals(2, db.get(subject).size());
+		assertEquals(2, Iterables.size(db.get(subject)));
 		db.deleteGraph(graph);
-		assertEquals(1, db.get(subject).size());
-		assertEquals("http://example.com/g1", ((Quad)db.get(subject).toArray()[0]).getGraph().getURI());
+		assertEquals(1, Iterables.size(db.get(subject)));
+		assertEquals("http://example.com/g1", ((Quad)db.get(subject).iterator().next()).getGraph().getURI());
 	}
 	
 	@Test
@@ -208,8 +206,41 @@ public abstract class EntityDatabaseTestBase {
 		Collection<Quad> allQuads = new ArrayList<Quad>(quads);
 		allQuads.addAll(otherQuads);
 		
-		assertQuadCollectionsEqual(allQuads, db.get(subject));
-		assertQuadCollectionsEqual(quads, db.getGraph(graph));
-		assertQuadCollectionsEqual(otherQuads, db.getGraph(otherGraph));
+		assertQuadIterablesEqual(allQuads, db.get(subject));
+		assertQuadIterablesEqual(quads, db.getGraph(graph));
+		assertQuadIterablesEqual(otherQuads, db.getGraph(otherGraph));
 	}
+	
+	@Test
+	public void iterateAllEntities() throws Exception{
+		Node secondGraph = Node.createURI(graph.getURI() + "1");
+		Node secondSubject = Node.createURI(subject.getURI() + "1");
+		Collection<Quad> secondQuads = getQuads(graph, secondSubject, 5);
+		Node thirdSubject = Node.createURI(subject.getURI() + "2");
+		Collection<Quad> thirdQuads_A = getQuads(graph, thirdSubject, 10);
+		Collection<Quad> thirdQuads_B = getQuads(secondGraph, thirdSubject, 10);
+		Node fourthSubject = Node.createURI(subject.getURI() + "3");
+		Collection<Quad> fourthQuads = getQuads(graph, fourthSubject, 4);
+		
+		db.put(subject, graph, quads);
+		db.put(secondSubject, graph, secondQuads);
+		db.put(thirdSubject, graph, thirdQuads_A);
+		db.put(thirdSubject, secondGraph, thirdQuads_B);
+		db.put(fourthSubject, graph, fourthQuads);
+		
+		ArrayList<Entry<Node, Iterable<Quad>>> results = new ArrayList<Entry<Node,Iterable<Quad>>>();
+ 		for (Entry<Node, Iterable<Quad>> entry : db.all()){
+			results.add(entry);
+		}
+ 		assertEquals(4, results.size());
+ 		assertEquals(results.get(0).getKey(), subject);
+ 		assertQuadIterablesEqual(quads, results.get(0).getValue());
+ 		assertEquals(results.get(1).getKey(), secondSubject);
+ 		assertQuadIterablesEqual(secondQuads, results.get(1).getValue());
+ 		assertEquals(results.get(2).getKey(), thirdSubject);
+ 		assertQuadIterablesEqual(Iterables.concat(thirdQuads_A, thirdQuads_B), results.get(2).getValue());
+ 		assertEquals(results.get(3).getKey(), fourthSubject);
+ 		assertQuadIterablesEqual(fourthQuads, results.get(3).getValue());
+	}
+	
 }

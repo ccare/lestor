@@ -28,7 +28,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,16 +52,10 @@ public class DatabaseManagerTest {
 	
 	@Before
 	public void setup(){
-		System.setProperty(DatabaseManager.DB_LOCATION_PROPERTY, tmpDir.getRoot().getAbsolutePath());
 		defaultConfig = new ConfigBuilder()
 								.setDataPath(tmpDir.getRoot().getAbsolutePath(), 
 											tmpDir.getRoot().getAbsolutePath() + "/logs")
 								.build();
-	}
-	
-	@After
-	public void teardown(){
-		System.clearProperty(DatabaseManager.DB_LOCATION_PROPERTY);
 	}
 	
 	@Test
@@ -74,7 +67,7 @@ public class DatabaseManagerTest {
 				return dbSystem;
 			};
 		};
-		DatabaseManager manager = new DatabaseManager(factory);
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), factory);
 		assertTrue(dbSystem.getDatabaseManager().getDatabases().isEmpty());
 		manager.getDatabase("test-db");
 		assertFalse(dbSystem.getDatabaseManager().getDatabases().isEmpty());
@@ -84,7 +77,7 @@ public class DatabaseManagerTest {
 	@Test
 	public void getDatabaseReturnsExistingDb() throws Exception{
 		BabuDB dbSystem = BabuDBFactory.createBabuDB(defaultConfig);
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		dbSystem.getDatabaseManager().createDatabase("test-db", 2);
 		Database db = dbSystem.getDatabaseManager().getDatabase("test-db");
 		assertSame(db, manager.getDatabase("test-db"));
@@ -93,7 +86,7 @@ public class DatabaseManagerTest {
 	@Test
 	public void deleteExistingDatabase() throws Exception{
 		BabuDB dbSystem = BabuDBFactory.createBabuDB(defaultConfig);
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		dbSystem.getDatabaseManager().createDatabase("test-db", BabuDbEntityDatabase.NUM_INDEXES);
 		assertTrue(dbSystem.getDatabaseManager().getDatabases().keySet().contains("test-db"));
 		manager.deleteDatabase("test-db");
@@ -103,7 +96,7 @@ public class DatabaseManagerTest {
 	@Test (expected=EntityDatabaseException.class)
 	public void attemptToDeleteNonExistentDatabase() throws Exception{
 		BabuDB dbSystem = BabuDBFactory.createBabuDB(defaultConfig);
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		assertFalse(dbSystem.getDatabaseManager().getDatabases().keySet().contains("test-db"));
 		manager.deleteDatabase("test-db");
 		assertFalse(dbSystem.getDatabaseManager().getDatabases().keySet().contains("test-db"));
@@ -115,7 +108,7 @@ public class DatabaseManagerTest {
 		final BabuDB dbSystem = createStrictMock(BabuDB.class);
 		dbSystem.shutdown(true);
 		replay(dbSystem);
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		try{
 			manager.shutDown();
 		}finally{
@@ -126,7 +119,7 @@ public class DatabaseManagerTest {
 	@Test 
 	public void dbSystemInitialisedWithCustomConfiguration() throws Exception{
 		ObservableFactory factory = new ObservableFactory();
-		new DatabaseManager(factory);
+		new DatabaseManager(tmpDir.getRoot(), factory);
 		assertNotNull(factory.suppliedConfig);
 		assertEquals(DatabaseManager.CHECK_INTERVAL_DEFAULT, factory.suppliedConfig.getCheckInterval());
 		assertEquals(DatabaseManager.MAX_LOG_SIZE_DEFAULT, factory.suppliedConfig.getMaxLogfileSize());
@@ -139,7 +132,7 @@ public class DatabaseManagerTest {
 		System.setProperty(DatabaseManager.MAX_LOG_SIZE_PROPERTY, "99999");
 		
 		ObservableFactory factory = new ObservableFactory();
-		new DatabaseManager(factory);
+		new DatabaseManager(tmpDir.getRoot(), factory);
 		assertNotNull(factory.suppliedConfig);
 		assertEquals(99, factory.suppliedConfig.getCheckInterval());
 		assertEquals(99999, factory.suppliedConfig.getMaxLogfileSize());
@@ -149,8 +142,7 @@ public class DatabaseManagerTest {
 	public void throwRuntimeExceptionIfDbRootDirMissing() throws Exception{
 		File bogus = new File("/this/does/not/exist");
 		assertFalse(bogus.exists());
-		System.setProperty(DatabaseManager.DB_LOCATION_PROPERTY, bogus.getAbsolutePath());
-		new DatabaseManager(new BabuDBFactoryWrapper());
+		new DatabaseManager(bogus, new BabuDBFactoryWrapper());
 	}
 	
 	@Test (expected=RuntimeException.class) 
@@ -159,8 +151,7 @@ public class DatabaseManagerTest {
 		bogus.createNewFile();
 		assertTrue(bogus.exists());
 		assertFalse(bogus.isDirectory());
-		System.setProperty(DatabaseManager.DB_LOCATION_PROPERTY, bogus.getAbsolutePath());
-		new DatabaseManager(new BabuDBFactoryWrapper());
+		new DatabaseManager(bogus, new BabuDBFactoryWrapper());
 	}
 	
 	@Test (expected=EntityDatabaseException.class)
@@ -177,7 +168,7 @@ public class DatabaseManagerTest {
 		expectLastCall().andReturn(dbManager);
 		replay(dbSystem);
 		
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		try{
 			manager.getDatabase("test-db");
 		}catch(Exception e){
@@ -205,7 +196,7 @@ public class DatabaseManagerTest {
 		expectLastCall().andReturn(dbManager).anyTimes();
 		replay(dbSystem);
 		
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		try{
 			manager.getDatabase("test-db");
 		}catch(Exception e){
@@ -231,7 +222,7 @@ public class DatabaseManagerTest {
 		expectLastCall().andReturn(dbManager).anyTimes();
 		replay(dbSystem);
 		
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		try{
 			manager.deleteDatabase("test-db");
 		}catch(Exception e){
@@ -259,7 +250,7 @@ public class DatabaseManagerTest {
 		expectLastCall().andThrow(expectedException);
 		replay(dbSystem);
 		
-		DatabaseManager manager = new DatabaseManager(getWrapperForDbSystem(dbSystem));
+		DatabaseManager manager = new DatabaseManager(tmpDir.getRoot(), getWrapperForDbSystem(dbSystem));
 		try{
 			manager.shutDown();
 		}finally{

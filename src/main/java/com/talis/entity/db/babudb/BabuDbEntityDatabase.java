@@ -16,7 +16,11 @@
 
 package com.talis.entity.db.babudb;
 
-import java.io.UnsupportedEncodingException;
+import static com.talis.entity.db.babudb.Keys.asString;
+import static com.talis.entity.db.babudb.Keys.getInverseKey;
+import static com.talis.entity.db.babudb.Keys.getKeyPrefix;
+import static com.talis.entity.db.babudb.Keys.getStorageKey;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -32,8 +36,8 @@ import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.sparql.core.Quad;
 import com.talis.entity.EntityDatabase;
 import com.talis.entity.EntityDatabaseException;
-import com.talis.entity.serializers.EntityDesc;
-import com.talis.entity.serializers.Serializer;
+import com.talis.entity.EntityDesc;
+import com.talis.entity.marshal.Marshaller;
 
 public class BabuDbEntityDatabase implements EntityDatabase{
 
@@ -47,12 +51,12 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 	public static final int NUM_INDEXES = 2;
 	
 	private final String dbName;
-	private final Serializer serializer;
+	private final Marshaller marshaller;
 	private final DatabaseManager dbManager;
 	private Database db;
 
-	public BabuDbEntityDatabase(Serializer serializer, String dbName, DatabaseManager dbManager){
-		this.serializer = serializer;
+	public BabuDbEntityDatabase(Marshaller marshaller, String dbName, DatabaseManager dbManager){
+		this.marshaller = marshaller;
 		this.dbName = dbName;
 		this.dbManager = dbManager;
 		try {
@@ -70,7 +74,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 		byte[] inverseKey = getInverseKey(subject, graph);
 		try{
 			DatabaseInsertGroup batch = db.createInsertGroup();
-			batch.addInsert(SUBJECT_INDEX, storageKey, serializer.serialize(subject, graph, quads).bytes);
+			batch.addInsert(SUBJECT_INDEX, storageKey, marshaller.toEntityDesc(subject, graph, quads).bytes);
 			batch.addInsert(GRAPH_INDEX, inverseKey, storageKey);
 			db.insert(batch, null);
 		} catch (Exception e) {
@@ -131,7 +135,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 				LOG.debug("Fetching single entity description");
 				desc.bytes = pair.getValue();
 				LOG.debug("Fetched single entity description");
-				quads.addAll(serializer.deserialize(desc));
+				quads.addAll(marshaller.toQuads(desc));
 		  }
 		} catch (Exception e) {
 			LOG.error(DB_READ_ERROR_MESSAGE, e);		
@@ -158,7 +162,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 			  LOG.debug("Fetching single entity description");
 			  desc.bytes = db.lookup(SUBJECT_INDEX, pair.getValue(), null).get();
 			  LOG.debug("Fetched single entity description");
-			  quads.addAll(serializer.deserialize(desc));
+			  quads.addAll(marshaller.toQuads(desc));
 		  }
 		} catch (Exception e) {
 			LOG.error(DB_READ_ERROR_MESSAGE, e);		
@@ -193,6 +197,17 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 	}
 	
 	@Override
+	public Iterable<Entry<Node, Iterable<Quad>>> all() throws EntityDatabaseException {
+		LOG.info("Creating Iterable over entire database");
+		try {
+			return new EntityIterable();
+		} catch (BabuDBException e) {
+			LOG.error("Error creating db iterator", e);
+			throw new EntityDatabaseException("Unable to create entity iterator", e);
+		}
+	}
+	
+	@Override
 	public void clear() throws EntityDatabaseException {
     	LOG.info("Clearing entity database");
     	try{
@@ -213,6 +228,7 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 	public void close() throws EntityDatabaseException {
 		try {
 			db.shutdown();
+			dbManager.shutDown();
 		} catch (BabuDBException e) {
 			LOG.error("Error closing entity database", e);
 			throw new EntityDatabaseException("Error closing entity database", e);
@@ -227,32 +243,96 @@ public class BabuDbEntityDatabase implements EntityDatabase{
 
 	@Override
 	public void abort() throws EntityDatabaseException { /* noop */ }
+	
+	
+	private class EntityIterable implements Iterable<Entry<Node, Iterable<Quad>>>{
+		
+		private final Iterator<Entry<byte[], byte[]>> dbIterator;
+		
+		public EntityIterable() throws BabuDBException{
+			dbIterator = db.prefixLookup(SUBJECT_INDEX, null, null).get();
+		}
+		
+		@Override
+		public Iterator<Entry<Node, Iterable<Quad>>> iterator() {
+			return new Iterator<Entry<Node, Iterable<Quad>>>(){
+				private String currentSubject = null;
+				{
+					// when we create the iterator, move it to the first item
+					if (dbIterator.hasNext()){
+						Entry<byte[], byte[]> pair = dbIterator.next();
+						String[] keyParts = asString(pair.getKey()).split("\t");
+						currentSubject = keyParts[0];
+					}
+				}
+								
+				@Override
+				public boolean hasNext() {
+					return null != currentSubject;
+				}
+	
+				@Override
+				public Entry<Node, Iterable<Quad>> next() {
+					// build an Entry to return from the current subject
+					try{
+						Node subject = Node.createURI(currentSubject);
+						Entity entity = new Entity(subject, get(subject));
+						
+						// move the iterator on to the next subject
+						if (!dbIterator.hasNext()){
+							// nothing more in the db
+							currentSubject = null;
+						}
+						
+						while (dbIterator.hasNext()){
+							Entry<byte[], byte[]> pair = dbIterator.next();
+							String[] keyParts = asString(pair.getKey()).split("\t");
+							if (! keyParts[0].equals(currentSubject)){
+								currentSubject = keyParts[0];
+								break;
+							}
+						}
+						
+						return entity;
+					} catch (EntityDatabaseException e) {
+						LOG.error("Error during iteration", e);
+						throw new RuntimeException("Error retrieving quads for subject " + currentSubject, e);
+					}
+				}
+	
+				@Override
+				public void remove() {
+					throw new UnsupportedOperationException("Not supported");					
+				}
+			};
+		
+		}
+	}
+	
+	static class Entity implements Entry<Node, Iterable<Quad>>{
 
-	private byte[] getStorageKey(Node subject, Node graph){
-		return getKeyString(subject, graph).getBytes();
-	}
-	
-	private byte[] getInverseKey(Node subject, Node graph){
-		return getKeyString(graph, subject).getBytes();
-	}
-	
-	private String getKeyString(Node first, Node second){
-		return first.getURI().concat("\t").concat(second.getURI());
-	}
-	
-	private byte[] getKeyPrefix(Node node){
-		return node.getURI().concat("\t").getBytes();
-	}
-	
-	public static String asString(byte value[]) {
-		if( value == null) {
-			return null;
+		private final Node subject;
+		private final Iterable<Quad> quads;
+		
+		Entity(Node subject, Iterable<Quad> quads){
+			this.subject = subject;
+			this.quads = quads;
 		}
-		try {
-			return new String(value, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
+		
+		@Override
+		public Node getKey() {
+			return subject;
 		}
+
+		@Override
+		public Iterable<Quad> getValue() {
+			return quads;
+		}
+
+		@Override
+		public Iterable<Quad> setValue(Iterable<Quad> value) {
+			throw new UnsupportedOperationException("Not Supported");
+		}
+		
 	}
-	
 }

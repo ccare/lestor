@@ -22,24 +22,13 @@
     </appender>
     
     <logger name="com.talis">
-        <level value="info"/> 
-    </logger>
-    
-    <logger name="com.talis.entity.db.krati">
         <level value="debug"/> 
-    </logger>
-    
-    <logger name="com.talis.entity.db.leveldb">
-        <level value="debug"/> 
-    </logger>
-    
-    <logger name="com.talis.entity.db.babudb">
-        <level value="info"/> 
     </logger>
     
     <root> 
     	<level value="info"/>
-        <appender-ref ref="fileout" /> 
+        <!-- appender-ref ref="stdout" /--> 
+        <appender-ref ref="fileout" />
     </root> 
 
 </log4j:configuration>
