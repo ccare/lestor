@@ -17,6 +17,7 @@
 package com.talis.entity.marshal;
 
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -26,7 +27,6 @@ import java.util.Collection;
 import org.openjena.atlas.lib.Pair;
 import org.openjena.riot.Lang;
 import org.openjena.riot.out.NodeFormatter;
-import org.openjena.riot.out.NodeFormatterNT;
 import org.openjena.riot.system.RiotLib;
 import org.openjena.riot.tokens.Tokenizer;
 import org.openjena.riot.tokens.TokenizerFactory;
@@ -66,8 +66,8 @@ public class Marshaller{
 	public Collection<Quad> toQuads(EntityDesc desc) throws IOException {
 		Collection<Quad> quads = new ArrayList<Quad>();
 		Tokenizer tokenizer = TokenizerFactory.makeTokenizerASCII(
-								new String(
-									codec.decode(desc.bytes))) ;
+									new ByteArrayInputStream(
+											codec.decode(desc.bytes))) ;
         LangPair parser = new LangPair(tokenizer, RiotLib.profile(Lang.NTRIPLES, null));
         while(parser.hasNext()){
         	Pair<Node, Node> po = parser.next();
@@ -75,4 +75,5 @@ public class Marshaller{
         }
 		return quads;
 	}
+
 }
