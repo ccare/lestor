@@ -1,9 +1,11 @@
 package com.talis.entity.db.babudb.bulk;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
@@ -20,13 +22,19 @@ import org.xtreemfs.babudb.index.DefaultByteRangeComparator;
 import org.xtreemfs.babudb.index.writer.DiskIndexWriter;
 import org.xtreemfs.babudb.log.DiskLogger.SyncMode;
 
+import com.google.common.collect.Iterables;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.sparql.core.Quad;
 import com.talis.entity.compress.SnappyCodec;
+import com.talis.entity.db.babudb.BabuDBFactoryWrapper;
+import com.talis.entity.db.babudb.BabuDbEntityDatabase;
+import com.talis.entity.db.babudb.DatabaseManager;
 import com.talis.entity.marshal.Marshaller;
 import com.talis.sort.ExternalSortIterator;
 import com.talis.sort.ExternalSortWriter;
 import com.talis.sort.PassThruSerializer;
 
-//@SuppressWarnings("PMD")
+@SuppressWarnings("PMD")
 public class BabuDbEntityDatabaseBuilder {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BabuDbEntityDatabaseBuilder.class);
@@ -121,5 +129,21 @@ public class BabuDbEntityDatabaseBuilder {
    		}
        	FileUtils.forceMkdir(rootDir);
        	FileUtils.cleanDirectory(rootDir);
+	}
+	
+	
+	public static void main(String[] args) throws Exception{
+		BabuDbEntityDatabaseBuilder builder = new BabuDbEntityDatabaseBuilder();
+		File out = new File("/tmp/babudb/out");
+		File tmp  = new File("/tmp/babudb/tmp");
+		builder.build(new FileInputStream(new File("/tmp/quads/quads.nq")), tmp, out, "db");
+		DatabaseManager dbm = new DatabaseManager(out, new BabuDBFactoryWrapper());
+		BabuDbEntityDatabase edb = new BabuDbEntityDatabase(new Marshaller(new SnappyCodec()), "db", dbm);
+		for (Entry<Node, Iterable<Quad>> entity : edb.all()){
+			if (Iterables.size(entity.getValue()) == 0){
+				System.out.println(entity.getKey().getURI());
+			}
+		}
+		System.out.println("Done");
 	}
 }

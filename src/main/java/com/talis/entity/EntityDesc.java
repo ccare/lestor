@@ -21,7 +21,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.StringWriter;
 
+import org.openjena.riot.out.EscapeStr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +54,10 @@ public class EntityDesc {
 	
 	static class Serializer implements com.talis.sort.Serializer<EntityDesc>{
         private static final Logger LOG = LoggerFactory.getLogger(EntityDesc.class);
-		@Override
-		
+        
+        private EscapeStr escapeProc; 
+        
+        @Override
 		public byte[] toBytes(EntityDesc entity) {
 			ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(bytes);
@@ -72,7 +76,9 @@ public class EntityDesc {
 			if (null == node){
 				out.write(0);
 			}else{
-				writeByteArrayOrNull(node.getURI().getBytes(), out);
+				StringWriter w = new StringWriter();
+				escapeProc.writeURI(w, node.getURI());
+				writeByteArrayOrNull(w.toString().getBytes(), out);
 			}
 		}
 		
